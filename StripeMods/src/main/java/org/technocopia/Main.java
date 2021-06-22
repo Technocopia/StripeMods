@@ -60,7 +60,8 @@ public class Main {
 			prices.add(makePrice(customer, product.getPrice()));
 
 		}
-		subscription.cancel();
+		if(prices.size()>0)
+			subscription.cancel();
 		return prices;
 
 	}
