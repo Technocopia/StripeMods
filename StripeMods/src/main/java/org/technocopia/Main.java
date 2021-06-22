@@ -17,7 +17,7 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 
 public class Main {
-
+	public static boolean live =false;
 	public static void main(String[] args) throws StripeException {
 
 		Stripe.apiKey = Keys.Secret;
@@ -36,15 +36,15 @@ public class Main {
 			if (result.size() > 0) {
 
 				for (Subscription subs : result) {
-					if (subs.getStatus().contentEquals("active")) {
+					//if (subs.getStatus().contentEquals("active")) {
 
 						for (String newPrice : updateCustomer(customer, subs))
 							if (newPrice != null)
 								setPrice(customer, newPrice);
-					} else {
-						System.out.println(
-								"No Active Subscriptions for " + customer.getEmail() + " " + customer.getDescription());
-					}
+//					} else {
+//						System.out.println(
+//								"No Active Subscriptions for " + customer.getEmail() + " " + customer.getDescription());
+//					}
 				}
 			}
 		}
@@ -62,8 +62,10 @@ public class Main {
 				prices.add(makePrice);
 
 		}
-		if(prices.size()>0)
-			subscription.cancel();
+		if(prices.size()>0) {
+			if(live)subscription.cancel();
+			System.out.println("Canceling "+subscription.getId() +" for "+customer.getEmail() + " " + customer.getDescription());
+		}
 		return prices;
 
 	}
@@ -75,9 +77,20 @@ public class Main {
 		String nights = "price_0J3n9RH0T8nvPnROsS2mSLhS";
 		String week = "price_0J4nUtH0T8nvPnROhO8flTmM";
 		String from90 = "price_0J4o0OH0T8nvPnROlkKFWany";
+		String newself ="price_0J4zC6H0T8nvPnROnk6SYxvC";
+		String O2cabnet="price_0J51E4H0T8nvPnROG82jxqCh";
 		String newPrice = "";
 		String id = subscriptionItem.getId().toLowerCase();
 		switch (unitAmount) {
+		case 4700:
+			newPrice=O2cabnet;
+			break;
+		case 15000:
+			newPrice = "price_0J4o1BH0T8nvPnROFyLG5l1m";
+			break;
+		case 2500:
+			newPrice = newself;
+			break;
 		case 12500:
 			newPrice = from125;
 			break;
@@ -98,8 +111,11 @@ public class Main {
 			// community member
 			return null;
 		case 8600:
-		case 17300:
+		case 14400:
 		case 10400:
+		case 17300:
+		case 2900:
+		case 5400:
 			// already updated
 			System.out.println("Already Updated " + customer.getEmail() + " " + customer.getDescription());
 			return null;
@@ -134,7 +150,7 @@ public class Main {
 		params.put("items", items);
 		params.put("billing_cycle_anchor", timestampJuly1_2021);
 		params.put("trial_end", timestampJuly1_2021);
-		Subscription subscription2 = Subscription.create(params);
+		if(live)Subscription.create(params);
 	}
 
 }
