@@ -57,7 +57,9 @@ public class Main {
 		ArrayList<String> prices = new ArrayList<>();
 
 		for (SubscriptionItem product : subdata) {
-			prices.add(makePrice(customer, product.getPrice()));
+			String makePrice = makePrice(customer, product.getPrice());
+			if(makePrice!=null)
+				prices.add(makePrice);
 
 		}
 		if(prices.size()>0)
