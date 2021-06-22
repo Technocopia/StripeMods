@@ -15,12 +15,14 @@ repositories {
     // Use jcenter for resolving dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+	maven { url 'https://oss.sonatype.org/content/repositories/staging/' }
 }
 
 dependencies {
 
 	implementation "com.stripe:stripe-java:20.58.0"
-
+	implementation "com.neuronrobotics:SimplePacketComsJava:1.0.0"
+	implementation "com.neuronrobotics:SimplePacketComsJava-HID:0.13.1"
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
 }
