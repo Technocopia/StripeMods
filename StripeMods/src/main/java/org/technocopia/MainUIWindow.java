@@ -3,14 +3,17 @@ package org.technocopia;
  * Sample Skeleton for 'MainUIWindow.fxml' Controller Class
  */
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import javafx.stage.WindowEvent;
 
 public class MainUIWindow {
 
@@ -41,6 +44,40 @@ public class MainUIWindow {
     @FXML
     void openScanCardsWidget(ActionEvent event) {
     	Platform.runLater(()->controlpanel.setDisable(true));
+    	
+		URL in = ReadCards.class.getClassLoader().getResource("ReadCards.fxml");
+		if(in==null)
+			throw new RuntimeException("No FXML found!");
+		
+		javafx.fxml.FXMLLoader loader =new javafx.fxml.FXMLLoader(in);
+		javafx.scene.Parent root;
+		ReadCards ui = new ReadCards();
+		loader.setController(ui);
+		loader.setClassLoader(ui.getClass().getClassLoader());
+		try {
+			root = loader.load();
+			
+			javafx.application.Platform.runLater(() -> {
+				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
+				primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+				    @Override
+				    public void handle(WindowEvent t) {
+				    	setCardController( command);
+				    }
+				});
+				javafx.scene.Scene scene = new javafx.scene.Scene(root);
+				primaryStage.setScene(scene);
+				primaryStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+				primaryStage.setResizable(true);
+				primaryStage.show();
+			});
+			
+			ui.setCardController(command);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
     }
 
     @FXML
