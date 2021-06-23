@@ -62,6 +62,7 @@ public class MainUIWindow {
 				primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 				    @Override
 				    public void handle(WindowEvent t) {
+				    	System.out.println("Closing Window of card scans");
 				    	setCardController( command);
 				    }
 				});
