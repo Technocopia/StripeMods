@@ -68,33 +68,7 @@ public class Main {
 
 //   
 //		System.exit(0);
-//		Map<String, Object> params = new HashMap<>();
-//		// params.put("email", "monroe.lauren@gmail.com");
-//		CustomerCollection customers = Customer.list(params);
-//
-//		for (Customer customer : customers.autoPagingIterable()) {
-//			String custID = customer.getId();
-//			Map<String, Object> params1 = new HashMap<>();
-//			params1.put("customer", custID);
-//			SubscriptionCollection subscriptions = Subscription.list(params1);
-//			Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
-//			List<Subscription> result = new ArrayList<Subscription>();
-//			iterable.forEach(result::add);
-//			if (result.size() > 0) {
-//
-//				for (Subscription subs : result) {
-//					//if (subs.getStatus().contentEquals("active")) {
-//
-//						for (String newPrice : updateCustomer(customer, subs))
-//							if (newPrice != null)
-//								setPrice(customer, newPrice);
-////					} else {
-////						System.out.println(
-////								"No Active Subscriptions for " + customer.getEmail() + " " + customer.getDescription());
-////					}
-//				}
-//			}
-//		}
+
 	}
 
 	private static ArrayList<String> updateCustomer(Customer customer, Subscription subscription)

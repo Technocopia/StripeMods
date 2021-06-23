@@ -11,7 +11,9 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.VBox;
 import javafx.stage.WindowEvent;
 
@@ -30,7 +32,7 @@ public class MainUIWindow {
     private VBox controlpanel; // Value injected by FXMLLoader
 
 	private CardReaderCommand command;
-
+	Alert a;
     @FXML
     void addKeycardToSubscription(ActionEvent event) {
     	Platform.runLater(()->controlpanel.setDisable(true));
@@ -45,6 +47,11 @@ public class MainUIWindow {
     void openScanCardsWidget(ActionEvent event) {
     	Platform.runLater(()->controlpanel.setDisable(true));
     	
+		launchCardScanWidget();
+
+    }
+
+	private void launchCardScanWidget() {
 		URL in = ReadCards.class.getClassLoader().getResource("ReadCards.fxml");
 		if(in==null)
 			throw new RuntimeException("No FXML found!");
@@ -78,12 +85,25 @@ public class MainUIWindow {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-
-    }
+	}
 
     @FXML
     void runUpdateSpreadsheet(ActionEvent event) {
     	Platform.runLater(()->controlpanel.setDisable(true));
+
+		Platform.runLater(()->{
+			Alert alert = new Alert(AlertType.INFORMATION);
+			a=alert;
+	        alert.setTitle("This Opperation takes time");
+	        alert.setHeaderText("");
+	        alert.setContentText("Just chill out...");
+	        alert.showAndWait();
+		});
+		new Thread(()->{
+			DatabaseSheet.runUpdate();
+			
+			Platform.runLater(()->a.close());
+		}).start();
     }
 
     @FXML

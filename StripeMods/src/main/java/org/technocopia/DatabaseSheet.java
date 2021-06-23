@@ -7,8 +7,13 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -22,14 +27,20 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import com.stripe.model.Customer;
+import com.stripe.model.CustomerCollection;
+import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionCollection;
 
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 
 public class DatabaseSheet {
-	private static String currentAdmin="None";
+	private static String currentAdmin = "None";
 	private static final String APPLICATION_NAME = "Technocopia Sign-up Keiosk";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String TOKENS_DIRECTORY_PATH = "tokens";
@@ -38,7 +49,7 @@ public class DatabaseSheet {
 	 * Global instance of the scopes required by this quickstart. If modifying these
 	 * scopes, delete your previously saved tokens/ folder.
 	 */
-	private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY);
+	private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
 	private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
 	/**
@@ -89,11 +100,11 @@ public class DatabaseSheet {
 					List row = values.get(i);
 					// Print columns A and E, which correspond to indices 0 and 4.
 					try {
-						long num = Long.parseLong( row.get(0).toString());
+						long num = Long.parseLong(row.get(0).toString());
 						String access = row.get(2).toString();
 						String name = row.get(1).toString();
-						
-						if(newNumber==num && access.toLowerCase().contentEquals("yes")) {
+
+						if (newNumber == num && access.toLowerCase().contentEquals("yes")) {
 							setCurrentAdmin(name);
 							return true;
 						}
@@ -106,21 +117,23 @@ public class DatabaseSheet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Platform.runLater(()->{
+
+		Platform.runLater(() -> {
 			Alert alert = new Alert(AlertType.INFORMATION);
-	        alert.setTitle("User Not Authorized");
-	        alert.setHeaderText("Check permissions");
-	        alert.setContentText("Look at permissions in sheet...");
-	        alert.showAndWait();
+			alert.setTitle("User Not Authorized");
+			alert.setHeaderText("Check permissions");
+			alert.setContentText("Look at permissions in sheet...");
+			alert.showAndWait();
 		});
 		try {
-			java.awt.Desktop.getDesktop()
-			.browse(new URL("https://docs.google.com/spreadsheets/d/1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U/").toURI());
+			java.awt.Desktop.getDesktop().browse(
+					new URL("https://docs.google.com/spreadsheets/d/1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U/")
+							.toURI());
 		} catch (IOException | URISyntaxException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		currentAdmin="None";
+		currentAdmin = "None";
 		return false;
 	}
 
@@ -129,9 +142,68 @@ public class DatabaseSheet {
 	}
 
 	private static void setCurrentAdmin(String currentAdmin) {
-		if(currentAdmin==null)
+		if (currentAdmin == null)
 			throw new RuntimeException();
 		DatabaseSheet.currentAdmin = currentAdmin;
+	}
+
+	public static void runUpdate() {
+		List<List<Object>> values = new ArrayList<>();
+
+		try {
+			// Build a new authorized API client service.
+			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
+			String range = "Membership "+Calendar.getInstance().get(Calendar.YEAR)+"!A5:E";
+			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			ValueRange response;
+
+			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+			List<List<Object>> sourceData = response.getValues();
+			
+			Map<String, Object> params = new HashMap<>();
+			// params.put("email", "monroe.lauren@gmail.com");
+			CustomerCollection customers = Customer.list(params);
+
+			for (Customer customer : customers.autoPagingIterable()) {
+				ArrayList<Object> line = new ArrayList<>();
+				
+				String custID = customer.getId();
+				line.add(custID);
+				
+				
+//				Map<String, Object> params1 = new HashMap<>();
+//				params1.put("customer", custID);
+//				SubscriptionCollection subscriptions = Subscription.list(params1);
+//				Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
+//				List<Subscription> result = new ArrayList<Subscription>();
+//				iterable.forEach(result::add);
+//				if (result.size() > 0) {
+//					for (Subscription subs : result) {
+//
+//					}
+//				}
+				values.add(line);
+			}
+			
+			List<ValueRange> data = new ArrayList<>();
+			
+			data.add(new ValueRange()
+			        .setRange("AUTOGEN!A2:E")
+			        .setValues(values));
+			// Additional ranges to update ...
+			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
+			        .setValueInputOption("USER_ENTERED")
+			        .setData(data);
+			BatchUpdateValuesResponse result =
+					serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
 	}
 
 }
