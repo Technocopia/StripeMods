@@ -40,54 +40,24 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
+
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
+import javafx.stage.WindowEvent;
 
 
 public class Main {
 	public static boolean live =false;
 	public static CardReaderCommand command;
 	
-    private static final String APPLICATION_NAME = "Technocopia Sign-up Keiosk";
-    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
-    /**
-     * Global instance of the scopes required by this quickstart.
-     * If modifying these scopes, delete your previously saved tokens/ folder.
-     */
-    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY);
-    private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
-    /**
-     * Creates an authorized Credential object.
-     * @param HTTP_TRANSPORT The network HTTP Transport.
-     * @return An authorized Credential object.
-     * @throws IOException If the credentials.json file cannot be found.
-     * @throws URISyntaxException 
-     */
-    private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException, URISyntaxException {
-        // Load client secrets.
-        InputStream in = Keys.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-        	java.awt.Desktop.getDesktop().browse(new URL("https://developers.google.com/workspace/guides/create-credentials").toURI());
-            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // Build flow and trigger user authorization request.
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-                .setAccessType("offline")
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-    }
-    
     
 	public static void main(String[] args) throws Exception {
 
 		Stripe.apiKey = Keys.Secret;
 		command=new CardReaderCommand();
+		com.sun.javafx.application.PlatformImpl.startup(()->{});
 		URL in = Main.class.getClassLoader().getResource("MainUIWindow.fxml");
 		if(in==null)
 			throw new RuntimeException("No FXML found!");
@@ -101,7 +71,20 @@ public class Main {
 		
 		javafx.application.Platform.runLater(() -> {
 			javafx.stage.Stage primaryStage = new javafx.stage.Stage();
-
+			primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+			    @Override
+			    public void handle(WindowEvent t) {
+			    	command.disconnect();
+			    	try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+			        Platform.exit();
+			        System.exit(0);
+			    }
+			});
 			javafx.scene.Scene scene = new javafx.scene.Scene(root);
 			primaryStage.setScene(scene);
 			primaryStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
@@ -112,30 +95,7 @@ public class Main {
 		ui.setCardController(command);
 		
 		
-//        // Build a new authorized API client service.
-//        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-//        final String spreadsheetId = "1uw4HVfUe_84FCFyCGBQeNqwv7I2fgep0OSJr1r80ZYM";
-//        String range = "Form Responses 1!B2:T";
-//        Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-//                .setApplicationName(APPLICATION_NAME)
-//                .build();
-//        ValueRange response = service.spreadsheets().values()
-//                .get(spreadsheetId, range)
-//                .execute();
-//        List<List<Object>> values = response.getValues();
-//        if (values == null || values.isEmpty()) {
-//            System.out.println("No data found.");
-//        } else {
-//            for (int i=0;i<values.size();i++) {
-//            	List row =values.get(i);
-//                // Print columns A and E, which correspond to indices 0 and 4.
-//            	try {
-//            		System.out.println("Row # "+i+" value= "+ row.get(0)+" "+row.get(2)+" "+row.get(7));
-//            	}catch(IndexOutOfBoundsException ex) {
-//            		System.out.println("No data on line "+ i);
-//            	}
-//            }
-//        }
+
 //   
 //		System.exit(0);
 //		Map<String, Object> params = new HashMap<>();
