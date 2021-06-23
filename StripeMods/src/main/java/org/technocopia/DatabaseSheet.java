@@ -32,8 +32,11 @@ import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
+import com.stripe.model.Plan;
+import com.stripe.model.Price;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionCollection;
+import com.stripe.model.SubscriptionItem;
 
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -154,7 +157,7 @@ public class DatabaseSheet {
 			// Build a new authorized API client service.
 			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
-			String range = "Membership "+Calendar.getInstance().get(Calendar.YEAR)+"!A5:E";
+			String range = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
 			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 					.setApplicationName(APPLICATION_NAME).build();
 			ValueRange response;
@@ -162,45 +165,84 @@ public class DatabaseSheet {
 			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
 
 			List<List<Object>> sourceData = response.getValues();
-			
+
 			Map<String, Object> params = new HashMap<>();
-			// params.put("email", "monroe.lauren@gmail.com");
 			CustomerCollection customers = Customer.list(params);
 
 			for (Customer customer : customers.autoPagingIterable()) {
 				ArrayList<Object> line = new ArrayList<>();
+				if(!customer.getDelinquent()) {
+					line.add("     Paid this month");
+				}else {
+					line.add("DELINQUENT payment this month");
+				}
 				
+
 				String custID = customer.getId();
 				line.add(custID);
-				
-				
-//				Map<String, Object> params1 = new HashMap<>();
-//				params1.put("customer", custID);
-//				SubscriptionCollection subscriptions = Subscription.list(params1);
-//				Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
-//				List<Subscription> result = new ArrayList<Subscription>();
-//				iterable.forEach(result::add);
-//				if (result.size() > 0) {
-//					for (Subscription subs : result) {
-//
-//					}
-//				}
-				values.add(line);
+				String email = customer.getEmail();
+				line.add(email);
+				for (List<Object> rows : sourceData) {
+					try {
+						String emailToTest = rows.get(1).toString();
+						if (emailToTest.toLowerCase().contains(email.toLowerCase())) {
+							line.add(rows.get(4).toString());
+							break;
+						}
+					} catch (Exception ex) {
+						// ex.printStackTrace();
+					}
+				}
+				if(line.size()==3) {
+					line.add("No Card");
+				}
+
+				Map<String, Object> params1 = new HashMap<>();
+				params1.put("customer", custID);
+				SubscriptionCollection subscriptions = Subscription.list(params1);
+				Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
+				List<Subscription> result = new ArrayList<Subscription>();
+				for(Subscription sub:iterable)
+					result.add(sub);
+				if (result.size() > 0) {
+					String membershipType="";
+					String space = "";
+					for (Subscription subs : result) {
+						List<SubscriptionItem> subdata = subs.getItems().getData();
+						for (SubscriptionItem product : subdata) {
+							//System.out.println(product);
+							String id2 = MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
+							String id = id2.toLowerCase();
+							if (id.contains("day") || id.contains("24") || id.contains("week")|| id.contains("nights")) {
+								membershipType = id2;
+							} else {
+								if (space.length() > 0)
+									space += "," + id2;
+								else
+									space = id2;
+							}
+						}
+						
+					}
+					line.add(membershipType);
+					line.add(space);
+					values.add(0, line);
+				}
+				else
+					line.clear();
+
 			}
-			
+
 			List<ValueRange> data = new ArrayList<>();
-			
-			data.add(new ValueRange()
-			        .setRange("AUTOGEN!A2:E")
-			        .setValues(values));
+
+			data.add(new ValueRange().setRange("AUTOGEN!A2:F").setValues(values));
 			// Additional ranges to update ...
 			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 					.setApplicationName(APPLICATION_NAME).build();
-			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
-			        .setValueInputOption("USER_ENTERED")
-			        .setData(data);
-			BatchUpdateValuesResponse result =
-					serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
+			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
+					.setData(data);
+			BatchUpdateValuesResponse result = serviceWrite.spreadsheets().values()
+					.batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
