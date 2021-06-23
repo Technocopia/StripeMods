@@ -21,6 +21,7 @@ sourceSets {
 		resources {
 			srcDir 'src/main/resources/org/technocopia/'
 			include 'credentials.json'
+			include "**/*.fxml"
 		}
 	}
 	test {

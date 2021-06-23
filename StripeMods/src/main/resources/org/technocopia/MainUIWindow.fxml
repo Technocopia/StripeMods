@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <children>
+            <Label text="Scan ADMINISTRATOR Card to begin">
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </Label>
+            <VBox fx:id="controlpanel" disable="true" prefHeight="429.0" prefWidth="600.0" spacing="10.0">
+               <children>
+                  <Button mnemonicParsing="false" onAction="#signUpNewMember" text="Sign Up Member" />
+                  <Button mnemonicParsing="false" onAction="#addKeycardToSubscription" text="Add keycard to subscription" />
+                  <Button mnemonicParsing="false" onAction="#cancelMembership" text="Cancel Membership" />
+                  <Button mnemonicParsing="false" onAction="#runUpdateSpreadsheet" text="Update Spreadsheet From STRIPE" />
+                  <Button mnemonicParsing="false" onAction="#openScanCardsWidget" text="Scan in new keycards" />
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+         </children>
+         <padding>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </padding>
+      </VBox>
+   </children>
+</AnchorPane>

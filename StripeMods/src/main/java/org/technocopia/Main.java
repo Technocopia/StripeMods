@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.management.RuntimeErrorException;
+
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
 import com.stripe.model.Price;
@@ -33,9 +35,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
+import javafx.fxml.FXMLLoader;
+
 
 public class Main {
 	public static boolean live =false;
@@ -56,11 +62,13 @@ public class Main {
      * @param HTTP_TRANSPORT The network HTTP Transport.
      * @return An authorized Credential object.
      * @throws IOException If the credentials.json file cannot be found.
+     * @throws URISyntaxException 
      */
-    private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
+    private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException, URISyntaxException {
         // Load client secrets.
         InputStream in = Keys.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
+        	java.awt.Desktop.getDesktop().browse(new URL("https://developers.google.com/workspace/guides/create-credentials").toURI());
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
@@ -80,35 +88,56 @@ public class Main {
 
 		Stripe.apiKey = Keys.Secret;
 		command=new CardReaderCommand();
-		command.setGotCard(newNumber -> System.out.println("Got card! "+newNumber));
+		URL in = Main.class.getClassLoader().getResource("MainUIWindow.fxml");
+		if(in==null)
+			throw new RuntimeException("No FXML found!");
 		
-        // Build a new authorized API client service.
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        final String spreadsheetId = "1uw4HVfUe_84FCFyCGBQeNqwv7I2fgep0OSJr1r80ZYM";
-        final String range = "Form Responses 1!B1:T";
-        Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                .setApplicationName(APPLICATION_NAME)
-                .build();
-        ValueRange response = service.spreadsheets().values()
-                .get(spreadsheetId, range)
-                .execute();
-        List<List<Object>> values = response.getValues();
-        if (values == null || values.isEmpty()) {
-            System.out.println("No data found.");
-        } else {
-            System.out.println("Name, Major");
-            for (int i=0;i<values.size();i++) {
-            	List row =values.get(i);
-                // Print columns A and E, which correspond to indices 0 and 4.
-            	try {
-            		System.out.println("Row # "+i+" value= "+ row.get(0)+" "+row.get(2)+" "+row.get(7));
-            	}catch(IndexOutOfBoundsException ex) {
-            		System.out.println("No data on line "+ i);
-            	}
-            }
-        }
-   
-		System.exit(0);
+		javafx.fxml.FXMLLoader loader =new javafx.fxml.FXMLLoader(in);
+		javafx.scene.Parent root;
+		MainUIWindow ui = new MainUIWindow();
+		loader.setController(ui);
+		loader.setClassLoader(ui.getClass().getClassLoader());
+		root = loader.load();
+		
+		javafx.application.Platform.runLater(() -> {
+			javafx.stage.Stage primaryStage = new javafx.stage.Stage();
+
+			javafx.scene.Scene scene = new javafx.scene.Scene(root);
+			primaryStage.setScene(scene);
+			primaryStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+			primaryStage.setResizable(true);
+			primaryStage.show();
+		});
+		
+		ui.setCardController(command);
+		
+		
+//        // Build a new authorized API client service.
+//        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+//        final String spreadsheetId = "1uw4HVfUe_84FCFyCGBQeNqwv7I2fgep0OSJr1r80ZYM";
+//        String range = "Form Responses 1!B2:T";
+//        Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+//                .setApplicationName(APPLICATION_NAME)
+//                .build();
+//        ValueRange response = service.spreadsheets().values()
+//                .get(spreadsheetId, range)
+//                .execute();
+//        List<List<Object>> values = response.getValues();
+//        if (values == null || values.isEmpty()) {
+//            System.out.println("No data found.");
+//        } else {
+//            for (int i=0;i<values.size();i++) {
+//            	List row =values.get(i);
+//                // Print columns A and E, which correspond to indices 0 and 4.
+//            	try {
+//            		System.out.println("Row # "+i+" value= "+ row.get(0)+" "+row.get(2)+" "+row.get(7));
+//            	}catch(IndexOutOfBoundsException ex) {
+//            		System.out.println("No data on line "+ i);
+//            	}
+//            }
+//        }
+//   
+//		System.exit(0);
 //		Map<String, Object> params = new HashMap<>();
 //		// params.put("email", "monroe.lauren@gmail.com");
 //		CustomerCollection customers = Customer.list(params);
