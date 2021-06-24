@@ -41,13 +41,17 @@ repositories {
 }
 
 dependencies {
-
+	// stripe
 	implementation "com.stripe:stripe-java:20.58.0"
+	// keycard reader
 	implementation "com.neuronrobotics:SimplePacketComsJava:1.0.0"
 	implementation "com.neuronrobotics:SimplePacketComsJava-HID:0.13.1"
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
+	// google sheets
 	implementation 'com.google.api-client:google-api-client:1.30.4'
 	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.30.6'
 	implementation 'com.google.apis:google-api-services-sheets:v4-rev581-1.25.0'
+	//bank card reader
+	implementation 'io.github.jnasmartcardio:jnasmartcardio:0.2.7'
 }
