@@ -5,6 +5,7 @@ package org.technocopia;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import javafx.application.Platform;
@@ -111,12 +112,51 @@ public class MainUIWindow {
     void signUpNewMember(ActionEvent event) {
     	Platform.runLater(()->controlpanel.setDisable(true));
     	new Thread(()->{
-			DatabaseSheet.availibleKeyCards();
+			
+			launchNewMemberSignup();
 			
 		}).start();
     }
 
-    @FXML // This method is called by the FXMLLoader when initialization is complete
+    private void launchNewMemberSignup() {
+    	List<Long> availible = DatabaseSheet.availibleKeyCards();
+		URL in = ReadCards.class.getClassLoader().getResource("NewMemberSignup.fxml");
+		if(in==null)
+			throw new RuntimeException("No FXML found!");
+		System.out.println("Loading XML "+in.toExternalForm());
+		javafx.fxml.FXMLLoader loader =new javafx.fxml.FXMLLoader(in);
+		javafx.scene.Parent root;
+		loader.setController(new  NewMemberSignup());
+		loader.setClassLoader(NewMemberSignup.class.getClassLoader());
+		try {
+			root = loader.load();
+			
+			javafx.application.Platform.runLater(() -> {
+				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
+				NewMemberSignup controller = loader.getController();
+				controller.setCardController(command,availible,primaryStage);
+				primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+				    @Override
+				    public void handle(WindowEvent t) {
+				    	System.out.println("Closing Window of new member signup");
+				    	setCardController( command);
+				    }
+				});
+				javafx.scene.Scene scene = new javafx.scene.Scene(root);
+				primaryStage.setScene(scene);
+				primaryStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+				primaryStage.setResizable(true);
+				primaryStage.show();
+			});
+			
+			
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+
+	@FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
         assert controlpanel != null : "fx:id=\"controlpanel\" was not injected: check your FXML file 'MainUIWindow.fxml'.";
         assert loggedInAdministrator != null : "fx:id=\"controlpanel\" was not injected: check your FXML file 'MainUIWindow.fxml'.";
