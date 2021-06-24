@@ -19,14 +19,15 @@ import javafx.stage.WindowEvent;
 
 public class Main {
 	public static boolean live =false;
-	public static CardReaderCommand command;
+	public static CardReaderCommand command=null;
 	
-
+	public static BankCardReader reader= null;
     
 	public static void main(String[] args) throws Exception {
 
 		Stripe.apiKey = Keys.Secret;
 		command=new CardReaderCommand();
+		reader= new BankCardReader();
 		com.sun.javafx.application.PlatformImpl.startup(()->{});
 		URL in = Main.class.getClassLoader().getResource("MainUIWindow.fxml");
 		if(in==null)

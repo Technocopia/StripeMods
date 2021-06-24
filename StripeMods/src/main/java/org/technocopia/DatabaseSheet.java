@@ -34,6 +34,7 @@ import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
 import com.stripe.model.Plan;
 import com.stripe.model.Price;
+import com.stripe.model.Product;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionCollection;
 import com.stripe.model.SubscriptionItem;
@@ -255,10 +256,13 @@ public class DatabaseSheet {
 					String membershipType = "";
 					String space = "";
 					for (Subscription subs : result) {
+						//System.out.println(subs);
 						List<SubscriptionItem> subdata = subs.getItems().getData();
 						for (SubscriptionItem product : subdata) {
-							// System.out.println(product);
-							String id2 = MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
+							//System.out.println(product);
+//							Product p =Product.;
+//							String id2 = p.getName();
+							String id2= MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
 							String id = id2.toLowerCase();
 							if (id.contains("day") || id.contains("24") || id.contains("week")
 									|| id.contains("nights")) {
