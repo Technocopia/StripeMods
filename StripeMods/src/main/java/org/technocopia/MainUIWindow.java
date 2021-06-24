@@ -94,21 +94,26 @@ public class MainUIWindow {
 		Platform.runLater(()->{
 			Alert alert = new Alert(AlertType.INFORMATION);
 			a=alert;
+			new Thread(()->{
+				DatabaseSheet.runUpdate(a);
+				
+				Platform.runLater(()->a.close());
+			}).start();
 	        alert.setTitle("This Opperation takes time");
 	        alert.setHeaderText("");
 	        alert.setContentText("Just chill out...");
 	        alert.showAndWait();
 		});
-		new Thread(()->{
-			DatabaseSheet.runUpdate();
-			
-			Platform.runLater(()->a.close());
-		}).start();
+		
     }
 
     @FXML
     void signUpNewMember(ActionEvent event) {
     	Platform.runLater(()->controlpanel.setDisable(true));
+    	new Thread(()->{
+			DatabaseSheet.availibleKeyCards();
+			
+		}).start();
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete

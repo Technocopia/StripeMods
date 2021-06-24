@@ -149,8 +149,54 @@ public class DatabaseSheet {
 			throw new RuntimeException();
 		DatabaseSheet.currentAdmin = currentAdmin;
 	}
+	public static List<List<Object>> memberSignupResponses() throws GeneralSecurityException, IOException, URISyntaxException {
+		
+		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+		final String spreadsheetId = "1uw4HVfUe_84FCFyCGBQeNqwv7I2fgep0OSJr1r80ZYM";
+		String range = "Form Responses 1!B2:O";
+		Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+				.setApplicationName(APPLICATION_NAME).build();
+		ValueRange response;
 
-	public static void runUpdate() {
+		response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+		return response.getValues();
+	}
+	public static List<Long> availibleKeyCards() {
+		ArrayList<Long> list = new ArrayList<>();
+		try {
+			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
+			String range = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
+			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			ValueRange response;
+
+			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+			List<List<Object>> sourceData = response.getValues();
+			for(List<Object> rows:sourceData) {
+				try {
+					long id = Long.parseLong(rows.get(4).toString());
+					String email = rows.get(0).toString();
+					if(email.length()<1)
+						list.add(id);
+				}catch(Exception ex) {
+//					System.out.print("\n");
+//					for(Object o:rows) {
+//						System.out.print(" "+o);
+//					}
+				}// no carn number on this row
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+		return list;
+	}
+
+	public static void runUpdate(Alert a) {
 		List<List<Object>> values = new ArrayList<>();
 
 		try {
@@ -171,21 +217,22 @@ public class DatabaseSheet {
 
 			for (Customer customer : customers.autoPagingIterable()) {
 				ArrayList<Object> line = new ArrayList<>();
-				if(!customer.getDelinquent()) {
-					line.add("     Paid this month");
-				}else {
-					line.add("DELINQUENT payment this month");
+				if (!customer.getDelinquent()) {
+					line.add("      Paid this month");
+				} else {
+					line.add("DELINQUENT this month");
 				}
-				
 
 				String custID = customer.getId();
 				line.add(custID);
 				String email = customer.getEmail();
 				line.add(email);
+
 				for (List<Object> rows : sourceData) {
 					try {
 						String emailToTest = rows.get(1).toString();
 						if (emailToTest.toLowerCase().contains(email.toLowerCase())) {
+							line.add(rows.get(0).toString());
 							line.add(rows.get(4).toString());
 							break;
 						}
@@ -193,8 +240,8 @@ public class DatabaseSheet {
 						// ex.printStackTrace();
 					}
 				}
-				if(line.size()==3) {
-					line.add("No Card");
+				if (line.size() == 4) {
+					line.add("No Card found for This email in Membership sheet");
 				}
 
 				Map<String, Object> params1 = new HashMap<>();
@@ -202,18 +249,19 @@ public class DatabaseSheet {
 				SubscriptionCollection subscriptions = Subscription.list(params1);
 				Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
 				List<Subscription> result = new ArrayList<Subscription>();
-				for(Subscription sub:iterable)
+				for (Subscription sub : iterable)
 					result.add(sub);
 				if (result.size() > 0) {
-					String membershipType="";
+					String membershipType = "";
 					String space = "";
 					for (Subscription subs : result) {
 						List<SubscriptionItem> subdata = subs.getItems().getData();
 						for (SubscriptionItem product : subdata) {
-							//System.out.println(product);
+							// System.out.println(product);
 							String id2 = MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
 							String id = id2.toLowerCase();
-							if (id.contains("day") || id.contains("24") || id.contains("week")|| id.contains("nights")) {
+							if (id.contains("day") || id.contains("24") || id.contains("week")
+									|| id.contains("nights")) {
 								membershipType = id2;
 							} else {
 								if (space.length() > 0)
@@ -222,20 +270,24 @@ public class DatabaseSheet {
 									space = id2;
 							}
 						}
-						
+
 					}
 					line.add(membershipType);
 					line.add(space);
 					values.add(0, line);
-				}
-				else
+					System.out.print("\n");
+					for (Object data : line) {
+						System.out.print(data + " ");
+					}
+					Platform.runLater(()->a.setContentText("Updating "+email));
+				} else
 					line.clear();
 
 			}
 
 			List<ValueRange> data = new ArrayList<>();
 
-			data.add(new ValueRange().setRange("AUTOGEN!A2:F").setValues(values));
+			data.add(new ValueRange().setRange("AUTOGEN!A2:G").setValues(values));
 			// Additional ranges to update ...
 			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 					.setApplicationName(APPLICATION_NAME).build();
