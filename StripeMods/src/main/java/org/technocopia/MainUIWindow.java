@@ -32,7 +32,7 @@ public class MainUIWindow {
     @FXML // fx:id="controlpanel"
     private VBox controlpanel; // Value injected by FXMLLoader
 
-	private CardReaderCommand command;
+	private CardReaderCommand command=null;
 	Alert a;
     @FXML
     void addKeycardToSubscription(ActionEvent event) {
@@ -67,7 +67,7 @@ public class MainUIWindow {
 			
 			javafx.application.Platform.runLater(() -> {
 				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
-				primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+				primaryStage.setOnHidden(new EventHandler<WindowEvent>() {
 				    @Override
 				    public void handle(WindowEvent t) {
 				    	System.out.println("Closing Window of card scans");
@@ -126,8 +126,8 @@ public class MainUIWindow {
 		System.out.println("Loading XML "+in.toExternalForm());
 		javafx.fxml.FXMLLoader loader =new javafx.fxml.FXMLLoader(in);
 		javafx.scene.Parent root;
-		loader.setController(new  NewMemberSignup());
-		loader.setClassLoader(NewMemberSignup.class.getClassLoader());
+//		loader.setController(new  NewMemberSignup());
+//		loader.setClassLoader(NewMemberSignup.class.getClassLoader());
 		try {
 			root = loader.load();
 			
@@ -135,7 +135,7 @@ public class MainUIWindow {
 				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
 				NewMemberSignup controller = loader.getController();
 				controller.setCardController(command,availible,primaryStage);
-				primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+				primaryStage.setOnHidden(new EventHandler<WindowEvent>() {
 				    @Override
 				    public void handle(WindowEvent t) {
 				    	System.out.println("Closing Window of new member signup");
@@ -163,6 +163,19 @@ public class MainUIWindow {
     }
 
 	public void setCardController(CardReaderCommand c) {
+		if(command==null) {
+			new Thread(()->{
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				launchNewMemberSignup();
+				
+			}).start();
+		}
+		
 		this.command = c;
 		command.setGotCard(new IOnCardRead() {
 			@Override
@@ -175,5 +188,7 @@ public class MainUIWindow {
 
 			}
 		});
+		
+
 	}
 }

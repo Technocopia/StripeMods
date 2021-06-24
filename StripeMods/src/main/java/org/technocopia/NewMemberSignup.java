@@ -1,10 +1,14 @@
 package org.technocopia;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 /**
  * Sample Skeleton for 'NewMemberSignup.fxml' Controller Class
  */
 
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -68,15 +72,14 @@ public class NewMemberSignup {
 
     @FXML // fx:id="cvcField"
     private TextField cvcField; // Value injected by FXMLLoader
-
+    @FXML // fx:id="confirmbutton"
+    private Button confirmbutton; // Value injected by FXMLLoader
+    
 	private Stage primaryStage;
-	
-	public NewMemberSignup(){
-		if(oneoff==null)
-			oneoff=this;
-		else
-			throw new RuntimeException("Onle one allowed WTF");
-	}
+	private List<List<Object>> responses;
+
+	private long newNumber;
+
 
     @FXML
     void confirmCardInfo(ActionEvent event) {
@@ -87,25 +90,43 @@ public class NewMemberSignup {
 
     @FXML
     void finishStep2(ActionEvent event) {
-
+    	Platform.runLater(()->step2.setDisable(true));
+    	Platform.runLater(()->step3.setDisable(false));
+    	Platform.runLater(()->cardnumberfield.requestFocus());
+    	cardnumberfield.setOnAction(ev->{
+    		Platform.runLater(()->monthfield.requestFocus());
+    	});
+    	monthfield.setOnAction(ev->{
+    		Platform.runLater(()->yearfield.requestFocus());
+    	});
+    	yearfield.setOnAction(ev->{
+    		Platform.runLater(()->cvcField.requestFocus());
+    	});
+    	cvcField.setOnAction(ev->{
+    		Platform.runLater(()->confirmbutton.requestFocus());
+    	});
+    	confirmbutton.setOnAction(ev->{
+    		confirmCardInfo(ev);
+    	});
+    	
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
 //        if( x3 != null ) throw new RuntimeException("fx:id=\"x3\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
 //        if( x4 != null ) throw new RuntimeException("fx:id=\"x4\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( cardNumberLabel != null ) throw new RuntimeException("fx:id=\"cardNumberLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( step2 != null ) throw new RuntimeException("fx:id=\"step2\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( selectApplication != null ) throw new RuntimeException("fx:id=\"selectApplication\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( nameLabel != null ) throw new RuntimeException("fx:id=\"nameLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( emailLabel != null ) throw new RuntimeException("fx:id=\"emailLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( membershipTypeLabel != null ) throw new RuntimeException("fx:id=\"membershipTypeLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( step3 != null ) throw new RuntimeException("fx:id=\"step3\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( monthfield != null ) throw new RuntimeException("fx:id=\"monthfield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( yearfield != null ) throw new RuntimeException("fx:id=\"yearfield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( cardnumberfield != null ) throw new RuntimeException("fx:id=\"cardnumberfield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( namefield != null ) throw new RuntimeException("fx:id=\"namefield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        if( cvcField != null) throw new RuntimeException( "fx:id=\"cvcField\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( cardNumberLabel == null ) throw new RuntimeException("fx:id=\"cardNumberLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( step2 == null ) throw new RuntimeException("fx:id=\"step2\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( selectApplication == null ) throw new RuntimeException("fx:id=\"selectApplication\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( nameLabel == null ) throw new RuntimeException("fx:id=\"nameLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( emailLabel == null ) throw new RuntimeException("fx:id=\"emailLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( membershipTypeLabel == null ) throw new RuntimeException("fx:id=\"membershipTypeLabel\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( step3 == null ) throw new RuntimeException("fx:id=\"step3\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( monthfield == null ) throw new RuntimeException("fx:id=\"monthfield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( yearfield == null ) throw new RuntimeException("fx:id=\"yearfield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( cardnumberfield == null ) throw new RuntimeException("fx:id=\"cardnumberfield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( namefield == null ) throw new RuntimeException("fx:id=\"namefield\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        if( cvcField == null) throw new RuntimeException( "fx:id=\"cvcField\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
 
     }
 
@@ -130,9 +151,45 @@ public class NewMemberSignup {
 					  }
 					});
 		});
+		try {
+			responses = DatabaseSheet.memberSignupResponses();
+			String first=null;
+			for (int i=responses.size()-1;i>responses.size()-20;i--) {
+				List<Object> row = responses.get(i);
+				String string = row.get(0).toString();
+				if(first==null)
+					first=string;
+				selectApplication.getItems().add(string);
+				
+			}
+			//selectApplication.getSelectionModel().select(first);
+			selectApplication.getSelectionModel().selectedIndexProperty().addListener((observableValue,  oldval,  newval) ->{
+				String selectedItem = selectApplication.getItems().get(newval.intValue());
+				System.out.println("Selected "+selectedItem);
+				for(List<Object> row:responses) {
+					String string = row.get(0).toString();
+					if(string.contentEquals(selectedItem)) {
+						Platform.runLater(()->emailLabel.setText(row.get(2).toString()));
+						Platform.runLater(()->membershipTypeLabel.setText(row.get(6).toString()));
+						Platform.runLater(()->nameLabel.setText(string));
+						Platform.runLater(()->namefield.setText(string));
+					}
+				}
+			});
+		} catch (GeneralSecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void setKeycardNumber(long newNumber) {
+		this.newNumber = newNumber;
 		Platform.runLater(()->cardNumberLabel.setText("card # "+newNumber));
 		Platform.runLater(()->step2.setDisable(false));
 	}
