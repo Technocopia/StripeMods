@@ -1,6 +1,5 @@
 package org.technocopia;
 
-import java.awt.event.ActionEvent;
 
 /**
  * Sample Skeleton for 'ReadCards.fxml' Controller Class
@@ -13,6 +12,7 @@ import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextArea;
+import javafx.stage.Stage;
 
 public class ReadCards {
 
@@ -28,6 +28,8 @@ public class ReadCards {
 	private CardReaderCommand command;
 	ArrayList<Long> nums = new ArrayList<Long>();
 
+	private Stage primaryStage;
+
 	@FXML // This method is called by the FXMLLoader when initialization is complete
 	void initialize() {
 		assert field != null : "fx:id=\"field\" was not injected: check your FXML file 'ReadCards.fxml'.";
@@ -35,19 +37,21 @@ public class ReadCards {
 	}
 
 	@FXML
-	void addallkeycards(ActionEvent event) {
+	void addallkeycards() {
+		primaryStage.close();
 		new Thread(() -> {
 
 			for(Long num:nums) {
 				DatabaseSheet.addKeyCard(num);
 			}
-
+			
 		}).start();
 		
 	}
 
-	public void setCardController(CardReaderCommand c) {
+	public void setCardController(CardReaderCommand c, Stage primaryStage) {
 		this.command = c;
+		this.primaryStage = primaryStage;
 		command.setGotCard(new IOnCardRead() {
 			@Override
 			public void event(long newNumber) {

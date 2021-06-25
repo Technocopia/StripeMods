@@ -74,6 +74,7 @@ public class MainUIWindow {
 
 			javafx.application.Platform.runLater(() -> {
 				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
+				ui.setCardController(command,primaryStage);
 				primaryStage.setOnHidden(new EventHandler<WindowEvent>() {
 					@Override
 					public void handle(WindowEvent t) {
@@ -88,7 +89,7 @@ public class MainUIWindow {
 				primaryStage.show();
 			});
 
-			ui.setCardController(command);
+			
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
