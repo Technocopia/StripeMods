@@ -290,7 +290,7 @@ public class DatabaseSheet {
 					line.clear();
 
 			}
-			
+
 			clearAutogen();
 
 			List<ValueRange> data = new ArrayList<>();
@@ -323,7 +323,7 @@ public class DatabaseSheet {
 		List<List<Object>> sourceData = response.getValues();
 
 		for (List<Object> row : sourceData) {
-			for(int i=0;i<row.size();i++) {
+			for (int i = 0; i < row.size(); i++) {
 				row.set(i, "");
 			}
 		}
@@ -335,9 +335,9 @@ public class DatabaseSheet {
 				.setApplicationName(APPLICATION_NAME).build();
 		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
 				.setData(data);
-		serviceWrite.spreadsheets().values()
-				.batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
-		
+		serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body)
+				.execute();
+
 	}
 
 	public static void setNewMember(String name, String emailtoSet, String phonenumber, String humanReadableString,
@@ -410,7 +410,7 @@ public class DatabaseSheet {
 	}
 
 	public static void cancleMember(long newNumber, Alert a) throws Exception {
-		Platform.runLater(()->a.setContentText("Get customer ID from card"));
+		Platform.runLater(() -> a.setContentText("Get customer ID from card"));
 		String customerID = getCustomerStringFromCardID(newNumber);
 		try {
 			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -420,7 +420,7 @@ public class DatabaseSheet {
 			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 					.setApplicationName(APPLICATION_NAME).build();
 			ValueRange response;
-			Platform.runLater(()->a.setContentText("Get membership data"));
+			Platform.runLater(() -> a.setContentText("Get membership data"));
 			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
 
 			List<List<Object>> sourceData = response.getValues();
@@ -435,7 +435,7 @@ public class DatabaseSheet {
 						row.set(3, "");
 						row.set(4, "");
 						row.set(5, "");
-						Platform.runLater(()->a.setContentText("Lookup subscriptions for customer"));
+						Platform.runLater(() -> a.setContentText("Lookup subscriptions for customer"));
 						Map<String, Object> params1 = new HashMap<>();
 						params1.put("customer", customerID);
 						SubscriptionCollection subscriptions = Subscription.list(params1);
@@ -459,7 +459,7 @@ public class DatabaseSheet {
 
 				}
 			}
-			Platform.runLater(()->a.setContentText("Write updated spreadsheet"));
+			Platform.runLater(() -> a.setContentText("Write updated spreadsheet"));
 			List<ValueRange> data = new ArrayList<>();
 
 			data.add(new ValueRange().setRange(range2).setValues(sourceData));
@@ -474,6 +474,56 @@ public class DatabaseSheet {
 			ex.printStackTrace();
 		}
 
+	}
+
+	public static String addKeyCard(long newNumber) {
+		try {
+			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
+			String range2 = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
+			String range = range2;
+			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			ValueRange response;
+			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+			List<List<Object>> sourceData = response.getValues();
+
+			for (List<Object> row : sourceData) {
+				try {
+					
+					if (row.size()==0) {
+						row.add( "");
+						row.add( "");
+						row.add( "");
+						row.add( "");
+						row.add( newNumber);
+						System.out.println("Adding new card "+newNumber);
+						break;
+					}
+					long idTest = Long.parseLong(row.get(4).toString());
+					if (idTest == newNumber) {
+						// this card is in use already
+						return row.get(0).toString();
+					}
+
+				} catch (Exception ex) {
+
+				}
+			}
+			List<ValueRange> data = new ArrayList<>();
+
+			data.add(new ValueRange().setRange(range2).setValues(sourceData));
+			// Additional ranges to update ...
+			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
+					.setData(data);
+			serviceWrite.spreadsheets().values().batchUpdate(spreadsheetId, body).execute();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return null;
 	}
 
 }

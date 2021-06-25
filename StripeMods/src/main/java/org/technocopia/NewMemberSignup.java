@@ -90,18 +90,17 @@ public class NewMemberSignup {
 	@FXML
 	void confirmCardInfo(ActionEvent event) throws StripeException {
 		Platform.runLater(() -> step3.setDisable(true));
-		Platform.runLater(()->{
+		Platform.runLater(() -> {
 			Alert alert = new Alert(AlertType.INFORMATION);
-			a=alert;
+			a = alert;
 			new Thread(() -> {
 				runMemberAdd();
 			}).start();
-	        alert.setTitle("This Opperation takes time");
-	        alert.setHeaderText("");
-	        alert.setContentText("Just chill out...");
-	        alert.showAndWait();
+			alert.setTitle("This Opperation takes time");
+			alert.setHeaderText("");
+			alert.setContentText("Just chill out...");
+			alert.showAndWait();
 		});
-		
 
 	}
 
@@ -114,7 +113,7 @@ public class NewMemberSignup {
 			Customer customer;
 			HashMap<String, Object> params2 = new HashMap<String, Object>();
 			params2.put("email", email);
-			Platform.runLater(()->a.setContentText("Read current customers"));
+			Platform.runLater(() -> a.setContentText("Read current customers"));
 			Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
 			long size = StreamSupport.stream(customers.spliterator(), false).count();
 
@@ -122,7 +121,7 @@ public class NewMemberSignup {
 				customer = StreamSupport.stream(customers.spliterator(), false).findFirst().get();
 
 			} else {
-				Platform.runLater(()->a.setContentText("Make new Customer/Bank card"));
+				Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
 				Map<String, Object> card = new HashMap<>();
 				card.put("number", cardnumber);
 				card.put("exp_month", Integer.parseInt(monthfield.getText()));
@@ -144,9 +143,7 @@ public class NewMemberSignup {
 
 				customer = Customer.create(params);
 			}
-			
-			
-			
+
 			String price = "price_0J4zTMH0T8nvPnROxqHnL22E";
 
 			if (membership.toLowerCase().contains("weekday")) {
@@ -167,14 +164,15 @@ public class NewMemberSignup {
 				else
 					price = "price_0J4zTMH0T8nvPnROxqHnL22E";
 			}
-			Platform.runLater(()->a.setContentText("Set up subscription"));
+			Platform.runLater(() -> a.setContentText("Set up subscription"));
 
 			Main.setUpNewSubscription(customer, price);
-			Platform.runLater(()->a.setContentText("Add new member to Membership sheet"));
-			DatabaseSheet.setNewMember(name,email,phonenumber, MembershipLookupTable.toHumanReadableString(price),newNumber);
-			Platform.runLater(()->a.setContentText("Update old sheet"));
+			Platform.runLater(() -> a.setContentText("Add new member to Membership sheet"));
+			DatabaseSheet.setNewMember(name, email, phonenumber, MembershipLookupTable.toHumanReadableString(price),
+					newNumber);
+			Platform.runLater(() -> a.setContentText("Update old sheet"));
 			DatabaseSheet.runUpdate(a);
-			Platform.runLater(()->a.close());
+			Platform.runLater(() -> a.close());
 		} catch (StripeException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -259,19 +257,23 @@ public class NewMemberSignup {
 		command.setGotCard(newNumber -> {
 			for (Long a : availible)
 				if (a == newNumber) {
-					setKeycardNumber(newNumber);
+					setKeycardNumber(newNumber, null);
 					return;
 				}
+			Platform.runLater(() -> {
+				Alert alert1 = new Alert(AlertType.CONFIRMATION);
+				alert1.setTitle("Card not in Availible List");
+				alert1.setHeaderText("Card unavailable");
+				alert1.setContentText("This card was not in the list of \n" + "availible cards in the Membership sheet"
+						+ "\nUse it anyway?");
+				alert1.showAndWait().ifPresent((btnType1) -> {
+					if (btnType1 == ButtonType.OK) {
+						new Thread(() -> {
+							setKeycardNumber(newNumber, DatabaseSheet.addKeyCard(newNumber));
+						}).start();
 
-			Alert alert = new Alert(AlertType.CONFIRMATION);
-			alert.setTitle("Card not in Availible List");
-			alert.setHeaderText("Card unavailable");
-			alert.setContentText("This card was not in the list of \n" + "availible cards in the Membership sheet"
-					+ "\nUse it anyway?");
-			alert.showAndWait().ifPresent((btnType) -> {
-				if (btnType == ButtonType.OK) {
-					setKeycardNumber(newNumber);
-				}
+					}
+				});
 			});
 		});
 		try {
@@ -294,7 +296,7 @@ public class NewMemberSignup {
 							String string = row.get(0).toString();
 							if (string.contentEquals(selectedItem)) {
 								Platform.runLater(() -> emailLabel.setText(row.get(2).toString()));
-								phonenumber=row.get(1).toString();
+								phonenumber = row.get(1).toString();
 								Platform.runLater(() -> membershipTypeLabel.setText(row.get(7).toString()));
 								Platform.runLater(() -> nameLabel.setText(string));
 								Platform.runLater(() -> namefield.setText(string));
@@ -313,9 +315,19 @@ public class NewMemberSignup {
 		}
 	}
 
-	private void setKeycardNumber(long newNumber) {
-		this.newNumber = newNumber;
-		Platform.runLater(() -> cardNumberLabel.setText("card # " + newNumber));
-		Platform.runLater(() -> step2.setDisable(false));
+	private void setKeycardNumber(long newNumber, String string) {
+		if (string == null) {
+			this.newNumber = newNumber;
+			Platform.runLater(() -> cardNumberLabel.setText("card # " + newNumber));
+			Platform.runLater(() -> step2.setDisable(false));
+		} else {
+			Platform.runLater(() -> {
+				Alert alert1 = new Alert(AlertType.CONFIRMATION);
+				alert1.setTitle("Card ALREADY USED");
+				alert1.setHeaderText("Card unavailable");
+				alert1.setContentText("This card belongs to " + string + "\nPick a different one");
+				alert1.showAndWait();
+			});
+		}
 	}
 }
