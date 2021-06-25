@@ -140,10 +140,10 @@ public class NewMemberSignup {
 			Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
 			long size = StreamSupport.stream(customers.spliterator(), false).count();
 			String paymentMethod = "";
-
+			PaymentMethod paymentMethodObject=null;
 			if (size == 0 || updateCardInfoMode) {
 				Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
-				PaymentMethod paymentMethodObject = makePaymentMethod(cardnumber, month, year, cvc);
+				paymentMethodObject = makePaymentMethod(cardnumber, month, year, cvc);
 				paymentMethod = paymentMethodObject.getId();
 			}
 
@@ -151,8 +151,16 @@ public class NewMemberSignup {
 				customer = StreamSupport.stream(customers.spliterator(), false).findFirst().get();
 				if (updateCardInfoMode) {
 					Map<String, Object> params = new HashMap<>();
-					params.put("source", paymentMethod);
-					customer = customer.update(params);
+					params.put("customer", customer.getId());
+					paymentMethodObject=paymentMethodObject.attach(params);
+					
+					Map<String, Object> params1 = new HashMap<>();
+					Map<String, Object> invoicesettings = new HashMap<>();
+					invoicesettings.put("default_payment_method", paymentMethod);
+					params1.put("invoice_settings", invoicesettings);
+					customer = customer.update(params1);
+					
+					
 				}
 			} else {
 
@@ -296,6 +304,10 @@ public class NewMemberSignup {
 	public void setCardController(CardReaderCommand command, List<Long> availible, Stage primaryStage) {
 		this.primaryStage = primaryStage;
 		command.setGotCard(newNumber -> {
+			if(updateCardInfoMode) {
+				setKeycardNumber(newNumber, null);
+				return;
+			}
 			for (Long a : availible)
 				if (a == newNumber) {
 					setKeycardNumber(newNumber, null);
@@ -367,14 +379,24 @@ public class NewMemberSignup {
 			Platform.runLater(() -> cardNumberLabel.setText("card # " + newNumber));
 			if(updateCardInfoMode) {
 				
-				Platform.runLater(() -> finishStep2(null));
+				
 				String custID;
 				try {
 					custID = DatabaseSheet.getCustomerStringFromCardID(newNumber);
+					if(custID==null) {
+						Platform.runLater(() -> {
+							Alert alert1 = new Alert(AlertType.CONFIRMATION);
+							alert1.setTitle("UNKNOWN member");
+							alert1.setHeaderText("Card unknown");
+							alert1.setContentText("This card is not in use at this time");
+							alert1.showAndWait();
+						});
+					}
 					Customer cust = Customer.retrieve(custID);
 					Platform.runLater(() -> emailLabel.setText(cust.getEmail()));
 					Platform.runLater(() -> nameLabel.setText(cust.getName()));
 					Platform.runLater(() -> namefield.setText(cust.getName()));
+					Platform.runLater(() -> finishStep2(null));
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
