@@ -94,80 +94,7 @@ public class NewMemberSignup {
 			Alert alert = new Alert(AlertType.INFORMATION);
 			a=alert;
 			new Thread(() -> {
-				try {
-					String email = emailLabel.getText();
-					String name = nameLabel.getText();
-					String membership = membershipTypeLabel.getText();
-					String cardnumber = cardnumberfield.getText();
-					Customer customer;
-					HashMap<String, Object> params2 = new HashMap<String, Object>();
-					params2.put("email", email);
-					Platform.runLater(()->a.setContentText("Read current customers"));
-					Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
-					long size = StreamSupport.stream(customers.spliterator(), false).count();
-
-					if (size != 0) {
-						customer = StreamSupport.stream(customers.spliterator(), false).findFirst().get();
-
-					} else {
-						Platform.runLater(()->a.setContentText("Make new Customer/Bank card"));
-						Map<String, Object> card = new HashMap<>();
-						card.put("number", cardnumber);
-						card.put("exp_month", Integer.parseInt(monthfield.getText()));
-						card.put("exp_year", Integer.parseInt("20" + yearfield.getText()));
-						card.put("cvc", cvcField.getText());
-						Map<String, Object> params1 = new HashMap<>();
-						params1.put("type", "card");
-						params1.put("card", card);
-
-						PaymentMethod paymentMethodObject = PaymentMethod.create(params1);
-
-						String paymentMethod = paymentMethodObject.getId();
-
-						CustomerCreateParams params = CustomerCreateParams.builder().setEmail(email)
-								.setPaymentMethod(paymentMethod).setName(name)
-								.setInvoiceSettings(CustomerCreateParams.InvoiceSettings.builder()
-										.setDefaultPaymentMethod(paymentMethod).build())
-								.build();
-
-						customer = Customer.create(params);
-					}
-					
-					
-					
-					String price = "price_0J4zTMH0T8nvPnROxqHnL22E";
-
-					if (membership.toLowerCase().contains("weekday")) {
-						if (membership.toLowerCase().contains("family"))
-							price = "price_0J4o06H0T8nvPnROqFWbFIGk";
-						else
-							price = "price_0J4nUtH0T8nvPnROhO8flTmM";
-					}
-					if (membership.toLowerCase().contains("nights")) {
-						if (membership.toLowerCase().contains("family"))
-							price = "price_0J4o0OH0T8nvPnROlkKFWany";
-						else
-							price = "price_0J3n9RH0T8nvPnROsS2mSLhS";
-					}
-					if (membership.toLowerCase().contains("all access")) {
-						if (membership.toLowerCase().contains("family"))
-							price = "price_0J4o1BH0T8nvPnROFyLG5l1m";
-						else
-							price = "price_0J4zTMH0T8nvPnROxqHnL22E";
-					}
-					Platform.runLater(()->a.setContentText("Set up subscription"));
-
-					Main.setUpNewSubscription(customer, price);
-					Platform.runLater(()->a.setContentText("Add new member to Membership sheet"));
-					DatabaseSheet.setNewMember(name,email,phonenumber, MembershipLookupTable.toHumanReadableString(price),newNumber);
-					Platform.runLater(()->a.setContentText("Update old sheet"));
-					DatabaseSheet.runUpdate(a);
-				} catch (StripeException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-				Platform.runLater(() -> primaryStage.close());
+				runMemberAdd();
 			}).start();
 	        alert.setTitle("This Opperation takes time");
 	        alert.setHeaderText("");
@@ -176,6 +103,84 @@ public class NewMemberSignup {
 		});
 		
 
+	}
+
+	private void runMemberAdd() {
+		try {
+			String email = emailLabel.getText();
+			String name = nameLabel.getText();
+			String membership = membershipTypeLabel.getText();
+			String cardnumber = cardnumberfield.getText();
+			Customer customer;
+			HashMap<String, Object> params2 = new HashMap<String, Object>();
+			params2.put("email", email);
+			Platform.runLater(()->a.setContentText("Read current customers"));
+			Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
+			long size = StreamSupport.stream(customers.spliterator(), false).count();
+
+			if (size != 0) {
+				customer = StreamSupport.stream(customers.spliterator(), false).findFirst().get();
+
+			} else {
+				Platform.runLater(()->a.setContentText("Make new Customer/Bank card"));
+				Map<String, Object> card = new HashMap<>();
+				card.put("number", cardnumber);
+				card.put("exp_month", Integer.parseInt(monthfield.getText()));
+				card.put("exp_year", Integer.parseInt("20" + yearfield.getText()));
+				card.put("cvc", cvcField.getText());
+				Map<String, Object> params1 = new HashMap<>();
+				params1.put("type", "card");
+				params1.put("card", card);
+
+				PaymentMethod paymentMethodObject = PaymentMethod.create(params1);
+
+				String paymentMethod = paymentMethodObject.getId();
+
+				CustomerCreateParams params = CustomerCreateParams.builder().setEmail(email)
+						.setPaymentMethod(paymentMethod).setName(name)
+						.setInvoiceSettings(CustomerCreateParams.InvoiceSettings.builder()
+								.setDefaultPaymentMethod(paymentMethod).build())
+						.build();
+
+				customer = Customer.create(params);
+			}
+			
+			
+			
+			String price = "price_0J4zTMH0T8nvPnROxqHnL22E";
+
+			if (membership.toLowerCase().contains("weekday")) {
+				if (membership.toLowerCase().contains("family"))
+					price = "price_0J4o06H0T8nvPnROqFWbFIGk";
+				else
+					price = "price_0J4nUtH0T8nvPnROhO8flTmM";
+			}
+			if (membership.toLowerCase().contains("nights")) {
+				if (membership.toLowerCase().contains("family"))
+					price = "price_0J4o0OH0T8nvPnROlkKFWany";
+				else
+					price = "price_0J3n9RH0T8nvPnROsS2mSLhS";
+			}
+			if (membership.toLowerCase().contains("all access")) {
+				if (membership.toLowerCase().contains("family"))
+					price = "price_0J4o1BH0T8nvPnROFyLG5l1m";
+				else
+					price = "price_0J4zTMH0T8nvPnROxqHnL22E";
+			}
+			Platform.runLater(()->a.setContentText("Set up subscription"));
+
+			Main.setUpNewSubscription(customer, price);
+			Platform.runLater(()->a.setContentText("Add new member to Membership sheet"));
+			DatabaseSheet.setNewMember(name,email,phonenumber, MembershipLookupTable.toHumanReadableString(price),newNumber);
+			Platform.runLater(()->a.setContentText("Update old sheet"));
+			DatabaseSheet.runUpdate(a);
+			Platform.runLater(()->a.close());
+		} catch (StripeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		Platform.runLater(() -> primaryStage.close());
 	}
 
 	@FXML
