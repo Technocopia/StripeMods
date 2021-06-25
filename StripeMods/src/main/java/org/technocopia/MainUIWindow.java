@@ -39,6 +39,11 @@ public class MainUIWindow {
 	@FXML
 	void addKeycardToSubscription(ActionEvent event) {
 		Platform.runLater(() -> controlpanel.setDisable(true));
+		new Thread(() -> {
+
+			launchNewMemberSignup(true);
+
+		}).start();
 	}
 
 	@FXML
@@ -121,7 +126,7 @@ public class MainUIWindow {
 		Platform.runLater(() -> controlpanel.setDisable(true));
 		new Thread(() -> {
 
-			launchNewMemberSignup();
+			launchNewMemberSignup(false);
 
 		}).start();
 	}
@@ -162,7 +167,7 @@ public class MainUIWindow {
 		}
 	}
 
-	private void launchNewMemberSignup() {
+	private void launchNewMemberSignup(boolean b) {
 		List<Long> availible = DatabaseSheet.availibleKeyCards();
 		URL in = ReadCards.class.getClassLoader().getResource("NewMemberSignup.fxml");
 		if (in == null)
@@ -179,6 +184,7 @@ public class MainUIWindow {
 				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
 				NewMemberSignup controller = loader.getController();
 				controller.setCardController(command, availible, primaryStage);
+				controller.setUpdateCardInfoMode(b);
 				primaryStage.setOnHidden(new EventHandler<WindowEvent>() {
 					@Override
 					public void handle(WindowEvent t) {
