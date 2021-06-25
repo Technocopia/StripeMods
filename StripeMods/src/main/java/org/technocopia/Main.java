@@ -32,14 +32,14 @@ public class Main {
 	public static BankCardReader reader= null;
     
 	public static void main(String[] args) throws Exception {
-
+		URL in = Main.class.getClassLoader().getResource("MainUIWindow.fxml");
+		if(in==null)
+			throw new RuntimeException("No FXML found!");
 		Stripe.apiKey = Keys.Secret;
 		command=new CardReaderCommand();
 		reader= new BankCardReader();
 		com.sun.javafx.application.PlatformImpl.startup(()->{});
-		URL in = Main.class.getClassLoader().getResource("MainUIWindow.fxml");
-		if(in==null)
-			throw new RuntimeException("No FXML found!");
+
 		
 		javafx.fxml.FXMLLoader loader =new javafx.fxml.FXMLLoader(in);
 		javafx.scene.Parent root;

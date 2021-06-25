@@ -7,8 +7,8 @@
  */
 
 plugins {
-    // Apply the java-library plugin to add support for Java Library
-    id 'java-library'
+	// Apply the java-library plugin to add support for Java Library
+	id 'java-library'
 	id 'java'
 	id 'application'
 }
@@ -19,7 +19,7 @@ sourceSets {
 			srcDir 'src/main/java'
 		}
 		resources {
-			srcDir 'src/main/resources/org/technocopia/'
+			srcDir 'src/main/resources/'
 			include 'credentials.json'
 			include "**/*.fxml"
 		}
@@ -33,9 +33,9 @@ sourceSets {
 
 
 repositories {
-    // Use jcenter for resolving dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
+	// Use jcenter for resolving dependencies.
+	// You can declare any Maven/Ivy/file repository here.
+	jcenter()
 	mavenCentral()
 	maven { url 'https://oss.sonatype.org/content/repositories/staging/' }
 }
@@ -46,8 +46,8 @@ dependencies {
 	// keycard reader
 	implementation "com.neuronrobotics:SimplePacketComsJava:1.0.0"
 	implementation "com.neuronrobotics:SimplePacketComsJava-HID:0.13.1"
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+	// Use JUnit test framework
+	testImplementation 'junit:junit:4.12'
 	// google sheets
 	implementation 'com.google.api-client:google-api-client:1.30.4'
 	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.30.6'
