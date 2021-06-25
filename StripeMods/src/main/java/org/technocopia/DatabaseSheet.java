@@ -311,8 +311,8 @@ public class DatabaseSheet {
 	private static void clearAutogen() throws GeneralSecurityException, IOException, URISyntaxException {
 		// TODO Auto-generated method stub
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-		final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
-		String range2 = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
+		final String spreadsheetId = "1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U";
+		String range2 = "AUTOGEN!A2:G";
 		String range = range2;
 		Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
@@ -329,13 +329,13 @@ public class DatabaseSheet {
 		}
 		List<ValueRange> data = new ArrayList<>();
 
-		data.add(new ValueRange().setRange("AUTOGEN!A2:G").setValues(sourceData));
+		data.add(new ValueRange().setRange(range2).setValues(sourceData));
 		// Additional ranges to update ...
 		Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
 		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
 				.setData(data);
-		serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body)
+		serviceWrite.spreadsheets().values().batchUpdate(spreadsheetId, body)
 				.execute();
 
 	}
@@ -429,12 +429,11 @@ public class DatabaseSheet {
 				try {
 					long idTest = Long.parseLong(row.get(4).toString());
 					if (idTest == newNumber) {
+						
 						row.set(0, "");
 						row.set(1, "");
 						row.set(2, "");
 						row.set(3, "");
-						row.set(4, "");
-						row.set(5, "");
 						Platform.runLater(() -> a.setContentText("Lookup subscriptions for customer"));
 						Map<String, Object> params1 = new HashMap<>();
 						params1.put("customer", customerID);
@@ -448,6 +447,7 @@ public class DatabaseSheet {
 								String id = id2.toLowerCase();
 								if (id.contains("day") || id.contains("24") || id.contains("week")
 										|| id.contains("nights")) {
+									System.out.println("CANCELING "+"");
 									subs.cancel();
 								}
 							}
@@ -456,7 +456,7 @@ public class DatabaseSheet {
 					}
 
 				} catch (Exception ex) {
-
+					//ex.printStackTrace();
 				}
 			}
 			Platform.runLater(() -> a.setContentText("Write updated spreadsheet"));
