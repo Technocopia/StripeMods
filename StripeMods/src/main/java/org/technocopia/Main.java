@@ -1,24 +1,32 @@
 package org.technocopia;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import com.stripe.model.Customer;
 import com.stripe.model.Price;
 import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionCollection;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.ZoneId;
+
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.stage.WindowEvent;
 
 
 public class Main {
-	public static boolean live =false;
+	public static boolean live =true;
 	public static CardReaderCommand command=null;
 	
 	public static BankCardReader reader= null;
@@ -160,9 +168,34 @@ public class Main {
 		return newPrice;
 	}
 
-	private static void setPrice(Customer customert, String newPrice) throws StripeException {
-		int timestampJuly1_2021 = 1625115600;
+	public static void setUpNewSubscription(Customer customert, String newPrice) throws StripeException {
+		Map<String, Object> params1 = new HashMap<>();
+		params1.put("customer", customert.getId());
+		SubscriptionCollection subscriptions = Subscription.list(params1);
+		Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
+		for (Subscription subs : iterable) {
+			//System.out.println(subs);
+			List<SubscriptionItem> subdata = subs.getItems().getData();
+			for (SubscriptionItem product : subdata) {
+				String id2= MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
+				String id = id2.toLowerCase();
+				if (id.contains("day") || id.contains("24") || id.contains("week")
+						|| id.contains("nights")) {
+					subs.cancel();
+				} 
+			}
 
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.HOUR_OF_DAY, 0); // ! clear would not reset the hour of day !
+		cal.clear(Calendar.MINUTE);
+		cal.clear(Calendar.SECOND);
+		cal.clear(Calendar.MILLISECOND);
+		cal.add(Calendar.MONTH, 1);
+		cal.set(Calendar.DAY_OF_MONTH, 1);
+		
+		long timestampOfNextMonthOnTheFirst=cal.getTimeInMillis()/1000;
+		
 		List<Object> items = new ArrayList<>();
 		Map<String, Object> item1 = new HashMap<>();
 		item1.put("price", newPrice);
@@ -170,8 +203,8 @@ public class Main {
 		Map<String, Object> params = new HashMap<>();
 		params.put("customer", customert.getId());
 		params.put("items", items);
-		params.put("billing_cycle_anchor", timestampJuly1_2021);
-		params.put("trial_end", timestampJuly1_2021);
+		params.put("billing_cycle_anchor", timestampOfNextMonthOnTheFirst);
+		params.put("trial_end", timestampOfNextMonthOnTheFirst);
 		if(live)Subscription.create(params);
 	}
 

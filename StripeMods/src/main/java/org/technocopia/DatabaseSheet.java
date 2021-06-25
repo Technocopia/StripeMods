@@ -304,4 +304,51 @@ public class DatabaseSheet {
 		}
 	}
 
+	public static void setNewMember(String name, String emailtoSet, String phonenumber, String humanReadableString, long newNumber) {
+		try {
+			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
+			String range2 = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
+			String range = range2;
+			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			ValueRange response;
+
+			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+			List<List<Object>> sourceData = response.getValues();
+
+			
+			for(List<Object> row:sourceData) {
+				ArrayList<Object> mrow=(ArrayList<Object>)row;
+				try {
+					long id = Long.parseLong(mrow.get(4).toString());
+					String email = mrow.get(0).toString();
+					if(email.length()<1 && id==newNumber) {
+						mrow.set(0, name);
+						mrow.set(1, emailtoSet);
+						mrow.set(2, phonenumber);
+						mrow.set(3, humanReadableString);
+					}
+				}catch(Exception ex) {
+					
+				}
+			}
+			List<ValueRange> data = new ArrayList<>();
+
+			data.add(new ValueRange().setRange(range2).setValues(sourceData));
+			// Additional ranges to update ...
+			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
+					.setData(data);
+			serviceWrite.spreadsheets().values()
+					.batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+	}
+
 }
