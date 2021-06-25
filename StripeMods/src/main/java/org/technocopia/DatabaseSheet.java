@@ -386,7 +386,7 @@ public class DatabaseSheet {
 
 	}
 
-	private static String getCustomerStringFromCardID(long ID) throws Exception {
+	public static String getCustomerStringFromCardID(long ID) throws Exception {
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 		final String spreadsheetId = "1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U";
 		String range2 = "AUTOGEN!A2:G";

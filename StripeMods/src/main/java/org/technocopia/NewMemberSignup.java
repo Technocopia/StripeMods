@@ -32,10 +32,28 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.*;
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.admin.directory.Directory;
+import com.google.api.services.admin.directory.DirectoryScopes;
+import com.google.api.services.admin.directory.model.User;
+import com.google.api.services.admin.directory.model.Users;
+
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Collections;
 
 public class NewMemberSignup {
 	private String phonenumber;
-	private static NewMemberSignup oneoff = null;
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
 	private ResourceBundle resources;
@@ -86,6 +104,7 @@ public class NewMemberSignup {
 
 	private long newNumber;
 	private Alert a;
+	private boolean updateCardInfoMode = false;
 
 	@FXML
 	void confirmCardInfo(ActionEvent event) throws StripeException {
@@ -110,30 +129,32 @@ public class NewMemberSignup {
 			String name = nameLabel.getText();
 			String membership = membershipTypeLabel.getText();
 			String cardnumber = cardnumberfield.getText();
+			int month = Integer.parseInt(monthfield.getText());
+			int year = Integer.parseInt("20" + yearfield.getText());
+			String cvc = cvcField.getText();
+
 			Customer customer;
 			HashMap<String, Object> params2 = new HashMap<String, Object>();
 			params2.put("email", email);
 			Platform.runLater(() -> a.setContentText("Read current customers"));
 			Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
 			long size = StreamSupport.stream(customers.spliterator(), false).count();
+			String paymentMethod = "";
+
+			if (size == 0 || updateCardInfoMode) {
+				Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
+				PaymentMethod paymentMethodObject = makePaymentMethod(cardnumber, month, year, cvc);
+				paymentMethod = paymentMethodObject.getId();
+			}
 
 			if (size != 0) {
 				customer = StreamSupport.stream(customers.spliterator(), false).findFirst().get();
-
+				if (updateCardInfoMode) {
+					Map<String, Object> params = new HashMap<>();
+					params.put("source", paymentMethod);
+					customer = customer.update(params);
+				}
 			} else {
-				Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
-				Map<String, Object> card = new HashMap<>();
-				card.put("number", cardnumber);
-				card.put("exp_month", Integer.parseInt(monthfield.getText()));
-				card.put("exp_year", Integer.parseInt("20" + yearfield.getText()));
-				card.put("cvc", cvcField.getText());
-				Map<String, Object> params1 = new HashMap<>();
-				params1.put("type", "card");
-				params1.put("card", card);
-
-				PaymentMethod paymentMethodObject = PaymentMethod.create(params1);
-
-				String paymentMethod = paymentMethodObject.getId();
 
 				CustomerCreateParams params = CustomerCreateParams.builder().setEmail(email)
 						.setPaymentMethod(paymentMethod).setName(name)
@@ -143,35 +164,37 @@ public class NewMemberSignup {
 
 				customer = Customer.create(params);
 			}
+			if (!updateCardInfoMode) {
+				String price = "price_0J4zTMH0T8nvPnROxqHnL22E";
 
-			String price = "price_0J4zTMH0T8nvPnROxqHnL22E";
+				if (membership.toLowerCase().contains("weekday")) {
+					if (membership.toLowerCase().contains("family"))
+						price = "price_0J4o06H0T8nvPnROqFWbFIGk";
+					else
+						price = "price_0J4nUtH0T8nvPnROhO8flTmM";
+				}
+				if (membership.toLowerCase().contains("nights")) {
+					if (membership.toLowerCase().contains("family"))
+						price = "price_0J4o0OH0T8nvPnROlkKFWany";
+					else
+						price = "price_0J3n9RH0T8nvPnROsS2mSLhS";
+				}
+				if (membership.toLowerCase().contains("all access")) {
+					if (membership.toLowerCase().contains("family"))
+						price = "price_0J4o1BH0T8nvPnROFyLG5l1m";
+					else
+						price = "price_0J4zTMH0T8nvPnROxqHnL22E";
+				}
+				Platform.runLater(() -> a.setContentText("Set up subscription"));
 
-			if (membership.toLowerCase().contains("weekday")) {
-				if (membership.toLowerCase().contains("family"))
-					price = "price_0J4o06H0T8nvPnROqFWbFIGk";
-				else
-					price = "price_0J4nUtH0T8nvPnROhO8flTmM";
+				Main.setUpNewSubscription(customer, price);
+				Platform.runLater(() -> a.setContentText("Add new member to Membership sheet"));
+				DatabaseSheet.setNewMember(name, email, phonenumber, MembershipLookupTable.toHumanReadableString(price),
+						newNumber);
+				Platform.runLater(() -> a.setContentText("Update old sheet"));
+				// GroupsManager.getGroup("").addMember(email);
+				DatabaseSheet.runUpdate(a);
 			}
-			if (membership.toLowerCase().contains("nights")) {
-				if (membership.toLowerCase().contains("family"))
-					price = "price_0J4o0OH0T8nvPnROlkKFWany";
-				else
-					price = "price_0J3n9RH0T8nvPnROsS2mSLhS";
-			}
-			if (membership.toLowerCase().contains("all access")) {
-				if (membership.toLowerCase().contains("family"))
-					price = "price_0J4o1BH0T8nvPnROFyLG5l1m";
-				else
-					price = "price_0J4zTMH0T8nvPnROxqHnL22E";
-			}
-			Platform.runLater(() -> a.setContentText("Set up subscription"));
-
-			Main.setUpNewSubscription(customer, price);
-			Platform.runLater(() -> a.setContentText("Add new member to Membership sheet"));
-			DatabaseSheet.setNewMember(name, email, phonenumber, MembershipLookupTable.toHumanReadableString(price),
-					newNumber);
-			Platform.runLater(() -> a.setContentText("Update old sheet"));
-			DatabaseSheet.runUpdate(a);
 			Platform.runLater(() -> a.close());
 		} catch (StripeException e) {
 			// TODO Auto-generated catch block
@@ -179,6 +202,24 @@ public class NewMemberSignup {
 		}
 
 		Platform.runLater(() -> primaryStage.close());
+	}
+
+	// https://stripe.com/docs/api/payment_methods/create
+	private PaymentMethod makePaymentMethod(String cardnumber, int month, int year, String cvc) throws StripeException {
+		// https://stripe.com/docs/api/payment_methods/create
+		Map<String, Object> card = new HashMap<>();
+		card.put("number", cardnumber);
+
+		card.put("exp_month", month);
+		card.put("exp_year", year);
+		card.put("cvc", cvc);
+
+		Map<String, Object> params1 = new HashMap<>();
+		params1.put("type", "card");
+		params1.put("card", card);
+
+		PaymentMethod paymentMethodObject = PaymentMethod.create(params1);
+		return paymentMethodObject;
 	}
 
 	@FXML
@@ -276,42 +317,47 @@ public class NewMemberSignup {
 				});
 			});
 		});
-		try {
-			responses = DatabaseSheet.memberSignupResponses();
-			String first = null;
-			for (int i = responses.size() - 1; i > responses.size() - 20; i--) {
-				List<Object> row = responses.get(i);
-				String string = row.get(0).toString();
-				if (first == null)
-					first = string;
-				selectApplication.getItems().add(string);
+		if (!updateCardInfoMode) {
+			try {
+				responses = DatabaseSheet.memberSignupResponses();
+				String first = null;
+				for (int i = responses.size() - 1; i > responses.size() - 20; i--) {
+					List<Object> row = responses.get(i);
+					String string = row.get(0).toString();
+					if (first == null)
+						first = string;
+					selectApplication.getItems().add(string);
 
-			}
-			// selectApplication.getSelectionModel().select(first);
-			selectApplication.getSelectionModel().selectedIndexProperty()
-					.addListener((observableValue, oldval, newval) -> {
-						String selectedItem = selectApplication.getItems().get(newval.intValue());
-						System.out.println("Selected " + selectedItem);
-						for (List<Object> row : responses) {
-							String string = row.get(0).toString();
-							if (string.contentEquals(selectedItem)) {
-								Platform.runLater(() -> emailLabel.setText(row.get(2).toString()));
-								phonenumber = row.get(1).toString();
-								Platform.runLater(() -> membershipTypeLabel.setText(row.get(7).toString()));
-								Platform.runLater(() -> nameLabel.setText(string));
-								Platform.runLater(() -> namefield.setText(string));
+				}
+				// selectApplication.getSelectionModel().select(first);
+				selectApplication.getSelectionModel().selectedIndexProperty()
+						.addListener((observableValue, oldval, newval) -> {
+							String selectedItem = selectApplication.getItems().get(newval.intValue());
+							System.out.println("Selected " + selectedItem);
+							for (List<Object> row : responses) {
+								String string = row.get(0).toString();
+								if (string.contentEquals(selectedItem)) {
+									Platform.runLater(() -> emailLabel.setText(row.get(2).toString()));
+									phonenumber = row.get(1).toString();
+									Platform.runLater(() -> membershipTypeLabel.setText(row.get(7).toString()));
+									Platform.runLater(() -> nameLabel.setText(string));
+									Platform.runLater(() -> namefield.setText(string));
+								}
 							}
-						}
-					});
-		} catch (GeneralSecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+						});
+			} catch (GeneralSecurityException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}else {
+			Platform.runLater(() -> selectApplication.setDisable(true));
+			
 		}
 	}
 
@@ -319,7 +365,24 @@ public class NewMemberSignup {
 		if (string == null) {
 			this.newNumber = newNumber;
 			Platform.runLater(() -> cardNumberLabel.setText("card # " + newNumber));
-			Platform.runLater(() -> step2.setDisable(false));
+			if(updateCardInfoMode) {
+				
+				Platform.runLater(() -> finishStep2(null));
+				String custID;
+				try {
+					custID = DatabaseSheet.getCustomerStringFromCardID(newNumber);
+					Customer cust = Customer.retrieve(custID);
+					Platform.runLater(() -> emailLabel.setText(cust.getEmail()));
+					Platform.runLater(() -> nameLabel.setText(cust.getName()));
+					Platform.runLater(() -> namefield.setText(cust.getName()));
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}else
+				Platform.runLater(() -> step2.setDisable(false));
+			
 		} else {
 			Platform.runLater(() -> {
 				Alert alert1 = new Alert(AlertType.CONFIRMATION);
@@ -329,5 +392,9 @@ public class NewMemberSignup {
 				alert1.showAndWait();
 			});
 		}
+	}
+
+	public void setUpdateCardInfoMode(boolean updateCardInfoMode) {
+		this.updateCardInfoMode = updateCardInfoMode;
 	}
 }
