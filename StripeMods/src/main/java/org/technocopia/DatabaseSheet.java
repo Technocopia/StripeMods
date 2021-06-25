@@ -343,7 +343,7 @@ public class DatabaseSheet {
 			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
 					.setData(data);
 			serviceWrite.spreadsheets().values()
-					.batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
+					.batchUpdate(spreadsheetId, body).execute();
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();
