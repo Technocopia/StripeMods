@@ -36,8 +36,9 @@ public class Main {
 		if(in==null)
 			throw new RuntimeException("No FXML found!");
 		Stripe.apiKey = Keys.Secret;
-		command=new CardReaderCommand();
 		reader= new BankCardReader();
+		command=new CardReaderCommand();
+		
 		com.sun.javafx.application.PlatformImpl.startup(()->{});
 
 		

@@ -25,13 +25,18 @@ import com.stripe.param.CustomerCreateParams;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
@@ -98,6 +103,16 @@ public class NewMemberSignup {
 	private TextField cvcField; // Value injected by FXMLLoader
 	@FXML // fx:id="confirmbutton"
 	private Button confirmbutton; // Value injected by FXMLLoader
+	
+    @FXML
+    private RadioButton typeButton;
+
+    @FXML
+    private ToggleGroup swipeType;
+
+    @FXML
+    private RadioButton swipeButton;
+
 
 	private Stage primaryStage;
 	private List<List<Object>> responses;
@@ -105,6 +120,13 @@ public class NewMemberSignup {
 	private long newNumber;
 	private Alert a;
 	private boolean updateCardInfoMode = false;
+
+	private Scene scene;
+
+	private EventHandler<KeyEvent> eventHandler;
+	
+	private String swipeString="";
+	private boolean StartedParse=false;
 
 	@FXML
 	void confirmCardInfo(ActionEvent event) throws StripeException {
@@ -255,8 +277,51 @@ public class NewMemberSignup {
 				e.printStackTrace();
 			}
 		});
-
+		
+		
+		selectSwipe(null);
 	}
+
+    @FXML
+    void selectSwipe(ActionEvent event) {
+		Platform.runLater(() -> cardnumberfield.setDisable(true));
+		Platform.runLater(() -> monthfield.setDisable(true));
+		Platform.runLater(() -> yearfield.setDisable(true));
+		Platform.runLater(() -> swipeButton.requestFocus());
+		eventHandler = new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent keyEvent) {
+				//if(keyEvent.getCode())
+				String character = keyEvent.getCharacter();
+				//System.out.print(character);
+				if(character.contains("?")&&StartedParse) {
+					System.out.println("Parse swipe ");
+					String[] parts = swipeString.split("\\^");
+					for(int i=0;i<parts.length;i++) {
+						System.out.println(parts[i]);
+					}
+					swipeString="";
+					StartedParse=false;
+				}else
+					swipeString+=character;
+				if(swipeString.contentEquals("%B")) {
+					System.out.println("Start");
+					swipeString="";
+					StartedParse=true;
+				}
+			}
+		};
+		scene.setOnKeyTyped(eventHandler);
+    }
+
+    @FXML
+    void selectType(ActionEvent event) {
+    	Platform.runLater(() -> cardnumberfield.requestFocus());
+		Platform.runLater(() -> cardnumberfield.setDisable(false));
+		Platform.runLater(() -> monthfield.setDisable(false));
+		Platform.runLater(() -> yearfield.setDisable(false));
+		///scene.removeEventHandler(null, eventHandler);;
+    }
 
 	@FXML // This method is called by the FXMLLoader when initialization is complete
 	void initialize() {
@@ -298,11 +363,15 @@ public class NewMemberSignup {
 		if (cvcField == null)
 			throw new RuntimeException(
 					"fx:id=\"cvcField\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
+        assert swipeType != null : "fx:id=\"swipeType\" was not injected: check your FXML file 'NewMemberSignup.fxml'.";
+        assert swipeButton != null : "fx:id=\"swipeButton\" was not injected: check your FXML file 'NewMemberSignup.fxml'.";
+
 
 	}
 
-	public void setCardController(CardReaderCommand command, List<Long> availible, Stage primaryStage) {
+	public void setCardController(CardReaderCommand command, List<Long> availible, Stage primaryStage, Scene scene) {
 		this.primaryStage = primaryStage;
+		this.scene = scene;
 		command.setGotCard(newNumber -> {
 			if(updateCardInfoMode) {
 				setKeycardNumber(newNumber, null);

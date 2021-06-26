@@ -182,8 +182,9 @@ public class MainUIWindow {
 
 			javafx.application.Platform.runLater(() -> {
 				javafx.stage.Stage primaryStage = new javafx.stage.Stage();
+				javafx.scene.Scene scene = new javafx.scene.Scene(root);
 				NewMemberSignup controller = loader.getController();
-				controller.setCardController(command, availible, primaryStage);
+				controller.setCardController(command, availible, primaryStage,scene);
 				controller.setUpdateCardInfoMode(b);
 				primaryStage.setOnHidden(new EventHandler<WindowEvent>() {
 					@Override
@@ -192,7 +193,7 @@ public class MainUIWindow {
 						setCardController(command);
 					}
 				});
-				javafx.scene.Scene scene = new javafx.scene.Scene(root);
+				
 				primaryStage.setScene(scene);
 				primaryStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
 				primaryStage.setResizable(true);
