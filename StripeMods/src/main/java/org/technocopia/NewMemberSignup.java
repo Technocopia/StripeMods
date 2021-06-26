@@ -288,6 +288,8 @@ public class NewMemberSignup {
 		Platform.runLater(() -> monthfield.setDisable(true));
 		Platform.runLater(() -> yearfield.setDisable(true));
 		Platform.runLater(() -> swipeButton.requestFocus());
+		swipeString="";
+		StartedParse=false;
 		eventHandler = new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent keyEvent) {
@@ -300,6 +302,18 @@ public class NewMemberSignup {
 					for(int i=0;i<parts.length;i++) {
 						System.out.println(parts[i]);
 					}
+					String num = parts[0];
+					String[] nambits =parts[1].split("/");
+					String fn = nambits[1];
+					String ln=nambits[0];
+					String Name = fn+" "+ln;
+					String year = nambits[2].substring(0,1);
+					String month = nambits[2].substring(2,3);
+					Platform.runLater(() -> monthfield.setText(month));
+					Platform.runLater(() -> yearfield.setText(year));
+					Platform.runLater(() -> namefield.setText(Name));
+					Platform.runLater(() -> cardnumberfield.setText(num));
+					Platform.runLater(() -> cvcField.requestFocus());
 					swipeString="";
 					StartedParse=false;
 				}else
