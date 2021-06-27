@@ -91,6 +91,7 @@ public class CancleMembership {
 			new Thread(() -> {
 				try {
 					DatabaseSheet.cancleMember(mumber,a);
+					
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -98,6 +99,7 @@ public class CancleMembership {
 				
 				Platform.runLater(() -> primaryStage.close());
 				DatabaseSheet.runUpdate(a);
+				Platform.runLater(() -> a.close());
 			}).start();
 	        alert.setTitle("This Opperation takes time");
 	        alert.setHeaderText("");

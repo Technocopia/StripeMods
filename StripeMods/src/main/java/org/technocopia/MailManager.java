@@ -12,10 +12,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Base64;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
-import com.google.api.services.gmail.Gmail.Users.GetProfile;
 import com.google.api.services.gmail.GmailScopes;
-import com.google.api.services.gmail.model.Label;
-import com.google.api.services.gmail.model.ListLabelsResponse;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.Profile;
 
@@ -26,7 +23,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -80,7 +76,7 @@ public class MailManager {
 	 * @return the MimeMessage to be used to send email
 	 * @throws MessagingException
 	 */
-	public static MimeMessage createEmail(String to, String from, String subject, String bodyText)
+	public static MimeMessage createEmail(String to,String cc, String from, String subject, String bodyText)
 			throws MessagingException {
 		Properties props = new Properties();
 		Session session = Session.getDefaultInstance(props, null);
@@ -89,6 +85,9 @@ public class MailManager {
 
 		email.setFrom(new InternetAddress(from));
 		email.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(to));
+		if(cc!=null)
+			if(cc.length()>0)
+				email.addRecipient(javax.mail.Message.RecipientType.CC, new InternetAddress(cc));
 		email.setSubject(subject);
 		email.setText(bodyText);
 		return email;
@@ -125,7 +124,7 @@ public class MailManager {
 	 * @throws IOException
 	 * @throws GeneralSecurityException
 	 */
-	public static void sendEmail(String to, String subject, String bodyText) {
+	public static void sendEmail(String to,String cc, String subject, String bodyText) {
 
 		new Thread(() -> {
 			try {
@@ -134,7 +133,7 @@ public class MailManager {
 						.setApplicationName(APPLICATION_NAME).build();
 				Profile p = service.users().getProfile("me").execute();
 				String email = p.getEmailAddress();
-				MimeMessage emailContent = createEmail(to, email, subject, bodyText);
+				MimeMessage emailContent = createEmail(to,cc, email, subject, bodyText);
 				Message message = createMessageWithEmail(emailContent);
 				message = service.users().messages().send(email, message).execute();
 

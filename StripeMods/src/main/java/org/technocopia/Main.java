@@ -72,104 +72,10 @@ public class Main {
 			primaryStage.show();
 		});
 		
-		ui.setCardController(command);
-		
-		MailManager.sendEmail("mad.hephaestus@gmail.com", "Ho Boy it worked!", "yep, all the things worked.");
-		
-		
-
-//   
-//		System.exit(0);
-
+		ui.setCardController(command);	
 	}
 
-	private static ArrayList<String> updateCustomer(Customer customer, Subscription subscription)
-			throws StripeException {
 
-		List<SubscriptionItem> subdata = subscription.getItems().getData();
-		ArrayList<String> prices = new ArrayList<>();
-
-		for (SubscriptionItem product : subdata) {
-			String makePrice = makePrice(customer, product.getPrice());
-			if(makePrice!=null)
-				prices.add(makePrice);
-
-		}
-		if(prices.size()>0) {
-			if(live)subscription.cancel();
-			System.out.println("Canceling "+subscription.getId() +" for "+customer.getEmail() + " " + customer.getDescription());
-		}
-		return prices;
-
-	}
-
-	private static String makePrice(Customer customer, Price subscriptionItem) throws StripeException {
-		int unitAmount = subscriptionItem.getUnitAmount().intValue();
-		String from125 = "price_0J4zTMH0T8nvPnROxqHnL22E";
-		String bayrental = "price_0J4o8rH0T8nvPnROT30iKMh9";
-		String nights = "price_0J3n9RH0T8nvPnROsS2mSLhS";
-		String week = "price_0J4nUtH0T8nvPnROhO8flTmM";
-		String from90 = "price_0J4o0OH0T8nvPnROlkKFWany";
-		String newself ="price_0J4zC6H0T8nvPnROnk6SYxvC";
-		String O2cabnet="price_0J51E4H0T8nvPnROG82jxqCh";
-		String newPrice = "";
-		String id = subscriptionItem.getId().toLowerCase();
-		switch (unitAmount) {
-		case 4700:
-			newPrice=O2cabnet;
-			break;
-		case 15000:
-			newPrice = "price_0J4o1BH0T8nvPnROFyLG5l1m";
-			break;
-		case 2500:
-			newPrice = newself;
-			break;
-		case 12500:
-			newPrice = from125;
-			break;
-		case 9000:
-			newPrice = from90;
-			break;
-		case 7500:
-			if (id.contains("bay") || id.contains("cube"))
-				newPrice = bayrental;
-			else if (id.contains("night"))
-				newPrice = nights;
-			else if (id.contains("day"))
-				newPrice = week;
-			else 
-				newPrice = week;
-			break;
-		case 100:
-			// community member
-			return null;
-		case 8600:
-		case 14400:
-		case 10400:
-		case 17300:
-		case 2900:
-		case 5400:
-			// already updated
-			System.out.println("Already Updated " + customer.getEmail() + " " + customer.getDescription());
-			return null;
-		default:
-			System.out.println("UNKNOWN product!! "+customer.getEmail() + " " + customer.getDescription());
-			System.out.println("\t\t" +
-			// sub.getEmail()+" "+sub.getName()+" "+sub.getDescription()+"\t\t PLAN: "+
-					id + " " + unitAmount);
-			return null;
-		}
-		
-		System.out.println("UPDATING ");
-		System.out.println(customer.getEmail() + " " + customer.getDescription()+" new price: "+newPrice);
-		Price newp = Price.retrieve(newPrice);
-		System.out.println("\t\t" +
-		// sub.getEmail()+" "+sub.getName()+" "+sub.getDescription()+"\t\t PLAN: "+
-				id + " " + unitAmount + " to new price " + newp.getUnitAmount().intValue());
-		// DANGER ZONE
-		
-		return newPrice;
-	}
 
 	public static void setUpNewSubscription(Customer customert, String newPrice) throws StripeException {
 		Map<String, Object> params1 = new HashMap<>();

@@ -335,8 +335,7 @@ public class DatabaseSheet {
 				.setApplicationName(APPLICATION_NAME).build();
 		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
 				.setData(data);
-		serviceWrite.spreadsheets().values().batchUpdate(spreadsheetId, body)
-				.execute();
+		serviceWrite.spreadsheets().values().batchUpdate(spreadsheetId, body).execute();
 
 	}
 
@@ -429,6 +428,9 @@ public class DatabaseSheet {
 				try {
 					long idTest = Long.parseLong(row.get(4).toString());
 					if (idTest == newNumber) {
+						String name = row.get(0).toString();
+						String emailtoSet = row.get(1).toString();
+						DatabaseSheet.sendCancledMemberNotifications(name, emailtoSet, idTest);
 						
 						row.set(0, "");
 						row.set(1, "");
@@ -447,7 +449,7 @@ public class DatabaseSheet {
 								String id = id2.toLowerCase();
 								if (id.contains("day") || id.contains("24") || id.contains("week")
 										|| id.contains("nights")) {
-									System.out.println("CANCELING "+"");
+									System.out.println("CANCELING " + "");
 									subs.cancel();
 								}
 							}
@@ -456,7 +458,7 @@ public class DatabaseSheet {
 					}
 
 				} catch (Exception ex) {
-					//ex.printStackTrace();
+					// ex.printStackTrace();
 				}
 			}
 			Platform.runLater(() -> a.setContentText("Write updated spreadsheet"));
@@ -491,14 +493,14 @@ public class DatabaseSheet {
 
 			for (List<Object> row : sourceData) {
 				try {
-					
-					if (row.size()==0) {
-						row.add( "");
-						row.add( "");
-						row.add( "");
-						row.add( "");
-						row.add( newNumber);
-						System.out.println("Adding new card "+newNumber);
+
+					if (row.size() == 0) {
+						row.add("");
+						row.add("");
+						row.add("");
+						row.add("");
+						row.add(newNumber);
+						System.out.println("Adding new card " + newNumber);
 						break;
 					}
 					long idTest = Long.parseLong(row.get(4).toString());
@@ -526,4 +528,40 @@ public class DatabaseSheet {
 		return null;
 	}
 
+	public static void sendNewMemberNotifications(String name, String email, long newNumber) {
+		sendMemberNotifications("NewMemberNotifications",name,email,newNumber);
+	}
+	public static void sendCancledMemberNotifications(String name, String email, long newNumber) {
+		sendMemberNotifications("CancleMembershipNotifications",name,email,newNumber);
+	}
+	public static void sendMemberNotifications(String tab, String name, String email, long newNumber) {
+		try {
+			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			final String spreadsheetId = "1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U";
+			String range2 = tab + "!A2:D";
+			String range = range2;
+			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			ValueRange response;
+
+			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+			List<List<Object>> sourceData = response.getValues();
+			for(List<Object> row:sourceData) {
+				String mail = row.get(0).toString();
+				if(mail.contentEquals("member"))
+					mail=email;
+				String cc = row.get(1).toString(); 
+				
+				String subject = row.get(2).toString(); 
+				String body =  row.get(3).toString()+"\n"+name+"\t"+email+" KeyCard Number = "+newNumber;
+				
+				MailManager.sendEmail(mail,cc, subject, body);
+				
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
 }

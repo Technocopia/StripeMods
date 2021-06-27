@@ -15,11 +15,8 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.stream.StreamSupport;
 
-import org.apache.http.client.protocol.RequestClientConnControl;
-
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
-import com.stripe.model.CustomerCollection;
 import com.stripe.model.PaymentMethod;
 import com.stripe.param.CustomerCreateParams;
 
@@ -28,30 +25,11 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.*;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
-
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collections;
 
 public class NewMemberSignup {
 	private String phonenumber;
@@ -113,7 +91,7 @@ public class NewMemberSignup {
 	private Stage primaryStage;
 	private List<List<Object>> responses;
 
-	private long newNumber;
+	private long newNumberID;
 	private Alert a;
 	private boolean updateCardInfoMode = false;
 
@@ -216,9 +194,11 @@ public class NewMemberSignup {
 				Main.setUpNewSubscription(customer, price);
 				Platform.runLater(() -> a.setContentText("Add new member to Membership sheet"));
 				DatabaseSheet.setNewMember(name, email, phonenumber, MembershipLookupTable.toHumanReadableString(price),
-						newNumber);
+						newNumberID);
 				Platform.runLater(() -> a.setContentText("Update old sheet"));
 				// GroupsManager.getGroup("").addMember(email);
+				DatabaseSheet.sendNewMemberNotifications(name,email,newNumberID);
+				
 				DatabaseSheet.runUpdate(a);
 			}
 			Platform.runLater(() -> a.close());
@@ -467,7 +447,7 @@ public class NewMemberSignup {
 
 	private void setKeycardNumber(long newNumber, String string) {
 		if (string == null) {
-			this.newNumber = newNumber;
+			this.newNumberID = newNumber;
 			Platform.runLater(() -> cardNumberLabel.setText("card # " + newNumber));
 			if(updateCardInfoMode) {
 				
