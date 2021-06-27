@@ -47,10 +47,6 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.admin.directory.Directory;
-import com.google.api.services.admin.directory.DirectoryScopes;
-import com.google.api.services.admin.directory.model.User;
-import com.google.api.services.admin.directory.model.Users;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -127,7 +123,7 @@ public class NewMemberSignup {
 	
 	private String swipeString="";
 	private boolean StartedParse=false;
-
+	private boolean FinishedParse=false;
 	@FXML
 	void confirmCardInfo(ActionEvent event) throws StripeException {
 		Platform.runLater(() -> step3.setDisable(true));
@@ -287,42 +283,54 @@ public class NewMemberSignup {
 		Platform.runLater(() -> cardnumberfield.setDisable(true));
 		Platform.runLater(() -> monthfield.setDisable(true));
 		Platform.runLater(() -> yearfield.setDisable(true));
+		Platform.runLater(() -> namefield.setDisable(true));
 		Platform.runLater(() -> swipeButton.requestFocus());
 		swipeString="";
 		StartedParse=false;
+		FinishedParse=false;
 		eventHandler = new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent keyEvent) {
-				//if(keyEvent.getCode())
-				String character = keyEvent.getCharacter();
-				//System.out.print(character);
-				if(character.contains("?")&&StartedParse) {
-					System.out.println("Parse swipe ");
-					String[] parts = swipeString.split("\\^");
-					for(int i=0;i<parts.length;i++) {
-						System.out.println(parts[i]);
+			
+				//new Thread(() -> {
+					String character = keyEvent.getCharacter();
+					//System.out.print(character);
+					if(character.contains("?")&&FinishedParse) {
+						System.out.println("Card read done");
+						Platform.runLater(() -> cvcField.requestFocus());
+						FinishedParse=false;
 					}
-					String num = parts[0];
-					String[] nambits =parts[1].split("/");
-					String fn = nambits[1];
-					String ln=nambits[0];
-					String Name = fn+" "+ln;
-					String year = nambits[2].substring(0,1);
-					String month = nambits[2].substring(2,3);
-					Platform.runLater(() -> monthfield.setText(month));
-					Platform.runLater(() -> yearfield.setText(year));
-					Platform.runLater(() -> namefield.setText(Name));
-					Platform.runLater(() -> cardnumberfield.setText(num));
-					Platform.runLater(() -> cvcField.requestFocus());
-					swipeString="";
-					StartedParse=false;
-				}else
-					swipeString+=character;
-				if(swipeString.contentEquals("%B")) {
-					System.out.println("Start");
-					swipeString="";
-					StartedParse=true;
-				}
+					if(character.contains("?")&&StartedParse) {
+						System.out.println("Parse swipe ");
+						String[] parts = swipeString.split("\\^");
+						for(int i=0;i<parts.length;i++) {
+							System.out.println(parts[i]);
+						}
+						String num = parts[0];
+						String[] nambits =parts[1].split("/");
+						String fn = nambits[1];
+						String ln=nambits[0];
+						String Name = fn+" "+ln;
+						String year = parts[2].substring(0,2);
+						String month = parts[2].substring(2,4);
+						Platform.runLater(() -> monthfield.setText(month));
+						Platform.runLater(() -> yearfield.setText(year));
+						Platform.runLater(() -> namefield.setText(Name));
+						Platform.runLater(() -> cardnumberfield.setText(num));
+						
+						swipeString="";
+						StartedParse=false;
+						FinishedParse=true;
+					}else
+						swipeString+=character;
+					if(swipeString.contentEquals("%B")) {
+						System.out.println("Start");
+						swipeString="";
+						StartedParse=true;
+					}
+					
+				//}).start();
+
 			}
 		};
 		scene.setOnKeyTyped(eventHandler);
@@ -334,6 +342,7 @@ public class NewMemberSignup {
 		Platform.runLater(() -> cardnumberfield.setDisable(false));
 		Platform.runLater(() -> monthfield.setDisable(false));
 		Platform.runLater(() -> yearfield.setDisable(false));
+		Platform.runLater(() -> namefield.setDisable(false));
 		///scene.removeEventHandler(null, eventHandler);;
     }
 

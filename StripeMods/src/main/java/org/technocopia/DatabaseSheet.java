@@ -47,7 +47,7 @@ public class DatabaseSheet {
 	private static String currentAdmin = "None";
 	static final String APPLICATION_NAME = "Technocopia Sign-up Keiosk";
 	static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-	private static final String TOKENS_DIRECTORY_PATH = "tokens";
+	private static final String TOKENS_DIRECTORY_PATH = "tokensheets";
 
 	/**
 	 * Global instance of the scopes required by this quickstart. If modifying these

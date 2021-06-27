@@ -74,6 +74,8 @@ public class Main {
 		
 		ui.setCardController(command);
 		
+		MailManager.sendEmail("mad.hephaestus@gmail.com", "Ho Boy it worked!", "yep, all the things worked.");
+		
 		
 
 //   
