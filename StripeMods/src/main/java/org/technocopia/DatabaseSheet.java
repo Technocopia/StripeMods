@@ -30,6 +30,7 @@ import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
 import com.stripe.model.Plan;
@@ -301,8 +302,8 @@ public class DatabaseSheet {
 					.setApplicationName(APPLICATION_NAME).build();
 			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
 					.setData(data);
-			BatchUpdateValuesResponse result = serviceWrite.spreadsheets().values()
-					.batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body).execute();
+			serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body)
+					.execute();
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
@@ -431,7 +432,7 @@ public class DatabaseSheet {
 						String name = row.get(0).toString();
 						String emailtoSet = row.get(1).toString();
 						DatabaseSheet.sendCancledMemberNotifications(name, emailtoSet, idTest);
-						
+
 						row.set(0, "");
 						row.set(1, "");
 						row.set(2, "");
@@ -528,12 +529,58 @@ public class DatabaseSheet {
 		return null;
 	}
 
+	public static void sendDelinquantPaymentNotifications() {
+		try {
+			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
+			String range = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
+			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+					.setApplicationName(APPLICATION_NAME).build();
+			ValueRange response;
+
+			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
+
+			List<List<Object>> sourceData = response.getValues();
+
+			CustomerCollection customers;
+
+			customers = Customer.list(new HashMap<>());
+			for (Customer customer : customers.autoPagingIterable()) {
+				if (customer.getDelinquent()) {
+					String email = customer.getEmail();
+					long idnum=0;
+					String name="";
+					for (List<Object> rows : sourceData) {
+						try {
+							String emailToTest = rows.get(1).toString();
+							if (emailToTest.toLowerCase().contains(email.toLowerCase())) {
+								name=rows.get(0).toString();
+								idnum=Long.parseLong(rows.get(4).toString());
+								break;
+							}
+						} catch (Exception ex) {
+							// ex.printStackTrace();
+						}
+					}
+					sendMemberNotifications("DelinquantPaymentNotifications",name,email,idnum);
+				}
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		// sendMemberNotifications("NewMemberNotifications",name,email,newNumber);
+	}
+
 	public static void sendNewMemberNotifications(String name, String email, long newNumber) {
-		sendMemberNotifications("NewMemberNotifications",name,email,newNumber);
+		sendMemberNotifications("NewMemberNotifications", name, email, newNumber);
 	}
+
 	public static void sendCancledMemberNotifications(String name, String email, long newNumber) {
-		sendMemberNotifications("CancleMembershipNotifications",name,email,newNumber);
+		sendMemberNotifications("CancleMembershipNotifications", name, email, newNumber);
 	}
+
 	public static void sendMemberNotifications(String tab, String name, String email, long newNumber) {
 		try {
 			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -547,19 +594,19 @@ public class DatabaseSheet {
 			response = service.spreadsheets().values().get(spreadsheetId, range).execute();
 
 			List<List<Object>> sourceData = response.getValues();
-			for(List<Object> row:sourceData) {
+			for (List<Object> row : sourceData) {
 				String mail = row.get(0).toString();
-				if(mail.contentEquals("member"))
-					mail=email;
-				String cc = row.get(1).toString(); 
-				
-				String subject = row.get(2).toString(); 
-				String body =  row.get(3).toString()+"\n"+name+"\t"+email+" KeyCard Number = "+newNumber;
-				
-				MailManager.sendEmail(mail,cc, subject, body);
-				
+				if (mail.contentEquals("member"))
+					mail = email;
+				String cc = row.get(1).toString();
+
+				String subject = row.get(2).toString();
+				String body = row.get(3).toString() + "\n" + name + "\t" + email + " KeyCard Number = " + newNumber;
+
+				MailManager.sendEmail(mail, cc, subject, body);
+
 			}
-			
+
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
