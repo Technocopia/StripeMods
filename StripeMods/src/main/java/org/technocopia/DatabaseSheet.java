@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -207,7 +208,7 @@ public class DatabaseSheet {
 			// Build a new authorized API client service.
 			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 			final String spreadsheetId = "10xDNHk0P70jmwuzEaLpYdMhQzwlEth2ruLZK7vpx7P4";
-			String range = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:E";
+			String range = "Membership " + Calendar.getInstance().get(Calendar.YEAR) + "!A5:F";
 			Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 					.setApplicationName(APPLICATION_NAME).build();
 			ValueRange response;
@@ -218,11 +219,11 @@ public class DatabaseSheet {
 
 			Map<String, Object> params = new HashMap<>();
 			CustomerCollection customers = Customer.list(params);
-
+			List<List<Object>> inactives = new ArrayList<>();
 			for (Customer customer : customers.autoPagingIterable()) {
 				ArrayList<Object> line = new ArrayList<>();
 				if (!customer.getDelinquent()) {
-					line.add("      Paid this month");
+					line.add("      Paid");
 				} else {
 					line.add("DELINQUENT this month");
 				}
@@ -244,8 +245,11 @@ public class DatabaseSheet {
 						// ex.printStackTrace();
 					}
 				}
+				if (line.size() == 3) {
+					line.add("No Name");
+				}
 				if (line.size() == 4) {
-					line.add("No Card found for This email in Membership sheet");
+					line.add("No Card");
 				}
 
 				Map<String, Object> params1 = new HashMap<>();
@@ -282,21 +286,22 @@ public class DatabaseSheet {
 					line.add(membershipType);
 					line.add(space);
 					values.add(0, line);
-					System.out.print("\n");
-					for (Object data : line) {
-						System.out.print(data + " ");
-					}
 					Platform.runLater(() -> a.setContentText("Updating " + email));
-				} else
-					line.clear();
-
+				} else {
+					while(line.size()<8)
+						line.add("");
+					line.set(7,"No Subscriptions");
+					line.set(0, "");
+					inactives.add(line);
+				}
 			}
-
+			for (List<Object> rows : inactives)
+				values.add(rows);
 			clearAutogen();
 
 			List<ValueRange> data = new ArrayList<>();
 
-			data.add(new ValueRange().setRange("AUTOGEN!A2:G").setValues(values));
+			data.add(new ValueRange().setRange("AUTOGEN!A2:H").setValues(values));
 			// Additional ranges to update ...
 			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 					.setApplicationName(APPLICATION_NAME).build();
@@ -313,7 +318,7 @@ public class DatabaseSheet {
 		// TODO Auto-generated method stub
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 		final String spreadsheetId = "1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U";
-		String range2 = "AUTOGEN!A2:G";
+		String range2 = "AUTOGEN!A2:H";
 		String range = range2;
 		Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
@@ -322,7 +327,8 @@ public class DatabaseSheet {
 		response = service.spreadsheets().values().get(spreadsheetId, range).execute();
 
 		List<List<Object>> sourceData = response.getValues();
-
+		if (sourceData == null)
+			return;
 		for (List<Object> row : sourceData) {
 			for (int i = 0; i < row.size(); i++) {
 				row.set(i, "");
@@ -546,23 +552,28 @@ public class DatabaseSheet {
 
 			customers = Customer.list(new HashMap<>());
 			for (Customer customer : customers.autoPagingIterable()) {
-				if (customer.getDelinquent()) {
+				Map<String, Object> params1 = new HashMap<>();
+				params1.put("customer", customer.getId());
+				SubscriptionCollection subscriptions = Subscription.list(params1);
+				Iterable<Subscription> iterable = subscriptions.autoPagingIterable();
+
+				if (customer.getDelinquent() && StreamSupport.stream(iterable.spliterator(), false).count() > 0) {
 					String email = customer.getEmail();
-					long idnum=0;
-					String name="";
+					long idnum = 0;
+					String name = "";
 					for (List<Object> rows : sourceData) {
 						try {
 							String emailToTest = rows.get(1).toString();
 							if (emailToTest.toLowerCase().contains(email.toLowerCase())) {
-								name=rows.get(0).toString();
-								idnum=Long.parseLong(rows.get(4).toString());
+								name = rows.get(0).toString();
+								idnum = Long.parseLong(rows.get(4).toString());
 								break;
 							}
 						} catch (Exception ex) {
 							// ex.printStackTrace();
 						}
 					}
-					sendMemberNotifications("DelinquantPaymentNotifications",name,email,idnum);
+					sendMemberNotifications("DelinquantPaymentNotifications", name, email, idnum);
 				}
 			}
 		} catch (Exception e) {

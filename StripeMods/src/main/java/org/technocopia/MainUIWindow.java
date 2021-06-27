@@ -63,7 +63,31 @@ public class MainUIWindow {
 		launchCardScanWidget();
 
 	}
+    @FXML
+    void sendDelinquentNotes(ActionEvent event) {
+    	runWithPopup(() -> {
 
+			DatabaseSheet.sendDelinquantPaymentNotifications();
+
+			Platform.runLater(() -> a.close());
+		});
+    	
+    	
+    }
+    
+    private void runWithPopup(Runnable r) {
+    	Platform.runLater(() -> controlpanel.setDisable(true));
+    	Platform.runLater(() -> {
+			Alert alert = new Alert(AlertType.INFORMATION);
+			a = alert;
+			new Thread(r).start();
+			alert.setTitle("This Opperation takes time");
+			alert.setHeaderText("");
+			alert.setContentText("Just chill out...");
+			alert.showAndWait();
+		});
+    }
+    
 	private void launchCardScanWidget() {
 		URL in = ReadCards.class.getClassLoader().getResource("ReadCards.fxml");
 		if (in == null)
@@ -103,21 +127,12 @@ public class MainUIWindow {
 
 	@FXML
 	void runUpdateSpreadsheet(ActionEvent event) {
-		Platform.runLater(() -> controlpanel.setDisable(true));
-
-		Platform.runLater(() -> {
-			Alert alert = new Alert(AlertType.INFORMATION);
-			a = alert;
-			new Thread(() -> {
-				DatabaseSheet.runUpdate(a);
-
-				Platform.runLater(() -> a.close());
-			}).start();
-			alert.setTitle("This Opperation takes time");
-			alert.setHeaderText("");
-			alert.setContentText("Just chill out...");
-			alert.showAndWait();
+		
+		runWithPopup(() -> {
+			DatabaseSheet.runUpdate(a);
+			Platform.runLater(() -> a.close());
 		});
+	
 
 	}
 
