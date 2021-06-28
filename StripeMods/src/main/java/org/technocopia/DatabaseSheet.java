@@ -220,37 +220,36 @@ public class DatabaseSheet {
 			Map<String, Object> params = new HashMap<>();
 			CustomerCollection customers = Customer.list(params);
 			List<List<Object>> inactives = new ArrayList<>();
+			List<List<Object>> communityMembers = new ArrayList<>();
+			List<List<Object>> nosubhascard = new ArrayList<>();
 			for (Customer customer : customers.autoPagingIterable()) {
 				ArrayList<Object> line = new ArrayList<>();
+				while(line.size()<8)
+					line.add("");
 				if (!customer.getDelinquent()) {
-					line.add("      Paid");
+					line.set(0,"      Paid");
 				} else {
-					line.add("DELINQUENT this month");
+					line.set(0,"DELINQUENT this month");
 				}
 
 				String custID = customer.getId();
-				line.add(custID);
+				line.set(1,custID);
 				String email = customer.getEmail();
-				line.add(email);
+				line.set(2,email);
 
 				for (List<Object> rows : sourceData) {
 					try {
 						String emailToTest = rows.get(1).toString();
 						if (emailToTest.toLowerCase().contains(email.toLowerCase())) {
-							line.add(rows.get(0).toString());
-							line.add(rows.get(4).toString());
+							line.set(3,rows.get(0).toString());
+							line.set(4,rows.get(4).toString());
 							break;
 						}
 					} catch (Exception ex) {
 						// ex.printStackTrace();
 					}
 				}
-				if (line.size() == 3) {
-					line.add("No Name");
-				}
-				if (line.size() == 4) {
-					line.add("No Card");
-				}
+
 
 				Map<String, Object> params1 = new HashMap<>();
 				params1.put("customer", custID);
@@ -272,7 +271,7 @@ public class DatabaseSheet {
 							String id2 = MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
 							String id = id2.toLowerCase();
 							if (id.contains("day") || id.contains("24") || id.contains("week")
-									|| id.contains("nights")) {
+									|| id.contains("nights")||id.contains("community")||id.contains("member")) {
 								membershipType = id2;
 							} else {
 								if (space.length() > 0)
@@ -283,18 +282,27 @@ public class DatabaseSheet {
 						}
 
 					}
-					line.add(membershipType);
-					line.add(space);
-					values.add(0, line);
+					line.set(5,membershipType);
+					line.set(6,space);
+					if(membershipType.contains("Community"))
+						communityMembers.add(line);
+					else
+						values.add(0, line);
 					Platform.runLater(() -> a.setContentText("Updating " + email));
 				} else {
-					while(line.size()<8)
-						line.add("");
+					
 					line.set(7,"No Subscriptions");
 					line.set(0, "");
-					inactives.add(line);
+					if(line.get(4).toString().length()>1) {
+						nosubhascard.add(line);
+					}else
+						inactives.add(line);
 				}
 			}
+			for (List<Object> rows : communityMembers)
+				values.add(rows);
+			for (List<Object> rows : nosubhascard)
+				values.add(rows);
 			for (List<Object> rows : inactives)
 				values.add(rows);
 			clearAutogen();
