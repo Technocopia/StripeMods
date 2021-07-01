@@ -32,6 +32,10 @@ import javafx.scene.control.Alert.*;
 import javafx.scene.input.KeyEvent;
 
 public class NewMemberSignup {
+
+	@FXML
+	private TextField fieldOfCardNum;
+
 	private String phonenumber;
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
@@ -77,16 +81,15 @@ public class NewMemberSignup {
 	private TextField cvcField; // Value injected by FXMLLoader
 	@FXML // fx:id="confirmbutton"
 	private Button confirmbutton; // Value injected by FXMLLoader
-	
-    @FXML
-    private RadioButton typeButton;
 
-    @FXML
-    private ToggleGroup swipeType;
+	@FXML
+	private RadioButton typeButton;
 
-    @FXML
-    private RadioButton swipeButton;
+	@FXML
+	private ToggleGroup swipeType;
 
+	@FXML
+	private RadioButton swipeButton;
 
 	private Stage primaryStage;
 	private List<List<Object>> responses;
@@ -98,10 +101,13 @@ public class NewMemberSignup {
 	private Scene scene;
 
 	private EventHandler<KeyEvent> eventHandler;
-	
-	private String swipeString="";
-	private boolean StartedParse=false;
-	private boolean FinishedParse=false;
+
+	private String swipeString = "";
+	private boolean StartedParse = false;
+	private boolean FinishedParse = false;
+
+	private List<Long> availible;
+
 	@FXML
 	void confirmCardInfo(ActionEvent event) throws StripeException {
 		Platform.runLater(() -> step3.setDisable(true));
@@ -136,7 +142,7 @@ public class NewMemberSignup {
 			Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
 			long size = StreamSupport.stream(customers.spliterator(), false).count();
 			String paymentMethod = "";
-			PaymentMethod paymentMethodObject=null;
+			PaymentMethod paymentMethodObject = null;
 			if (size == 0 || updateCardInfoMode) {
 				Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
 				paymentMethodObject = makePaymentMethod(cardnumber, month, year, cvc);
@@ -148,15 +154,14 @@ public class NewMemberSignup {
 				if (updateCardInfoMode) {
 					Map<String, Object> params = new HashMap<>();
 					params.put("customer", customer.getId());
-					paymentMethodObject=paymentMethodObject.attach(params);
-					
+					paymentMethodObject = paymentMethodObject.attach(params);
+
 					Map<String, Object> params1 = new HashMap<>();
 					Map<String, Object> invoicesettings = new HashMap<>();
 					invoicesettings.put("default_payment_method", paymentMethod);
 					params1.put("invoice_settings", invoicesettings);
 					customer = customer.update(params1);
-					
-					
+
 				}
 			} else {
 
@@ -197,8 +202,8 @@ public class NewMemberSignup {
 						newNumberID);
 				Platform.runLater(() -> a.setContentText("Update old sheet"));
 				// GroupsManager.getGroup("").addMember(email);
-				DatabaseSheet.sendNewMemberNotifications(name,email,newNumberID);
-				
+				DatabaseSheet.sendNewMemberNotifications(name, email, newNumberID);
+
 				DatabaseSheet.runUpdate(a);
 			}
 			Platform.runLater(() -> a.close());
@@ -253,78 +258,77 @@ public class NewMemberSignup {
 				e.printStackTrace();
 			}
 		});
-		
-		
+
 		selectSwipe(null);
 	}
 
-    @FXML
-    void selectSwipe(ActionEvent event) {
+	@FXML
+	void selectSwipe(ActionEvent event) {
 		Platform.runLater(() -> cardnumberfield.setDisable(true));
 		Platform.runLater(() -> monthfield.setDisable(true));
 		Platform.runLater(() -> yearfield.setDisable(true));
 		Platform.runLater(() -> namefield.setDisable(true));
 		Platform.runLater(() -> swipeButton.requestFocus());
-		swipeString="";
-		StartedParse=false;
-		FinishedParse=false;
+		swipeString = "";
+		StartedParse = false;
+		FinishedParse = false;
 		eventHandler = new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent keyEvent) {
-			
-				//new Thread(() -> {
-					String character = keyEvent.getCharacter();
-					//System.out.print(character);
-					if(character.contains("?")&&FinishedParse) {
-						System.out.println("Card read done");
-						Platform.runLater(() -> cvcField.requestFocus());
-						FinishedParse=false;
+
+				// new Thread(() -> {
+				String character = keyEvent.getCharacter();
+				// System.out.print(character);
+				if (character.contains("?") && FinishedParse) {
+					System.out.println("Card read done");
+					Platform.runLater(() -> cvcField.requestFocus());
+					FinishedParse = false;
+				}
+				if (character.contains("?") && StartedParse) {
+					System.out.println("Parse swipe ");
+					String[] parts = swipeString.split("\\^");
+					for (int i = 0; i < parts.length; i++) {
+						System.out.println(parts[i]);
 					}
-					if(character.contains("?")&&StartedParse) {
-						System.out.println("Parse swipe ");
-						String[] parts = swipeString.split("\\^");
-						for(int i=0;i<parts.length;i++) {
-							System.out.println(parts[i]);
-						}
-						String num = parts[0];
-						String[] nambits =parts[1].split("/");
-						String fn = nambits[1];
-						String ln=nambits[0];
-						String Name = fn+" "+ln;
-						String year = parts[2].substring(0,2);
-						String month = parts[2].substring(2,4);
-						Platform.runLater(() -> monthfield.setText(month));
-						Platform.runLater(() -> yearfield.setText(year));
-						Platform.runLater(() -> namefield.setText(Name));
-						Platform.runLater(() -> cardnumberfield.setText(num));
-						
-						swipeString="";
-						StartedParse=false;
-						FinishedParse=true;
-					}else
-						swipeString+=character;
-					if(swipeString.contentEquals("%B")) {
-						System.out.println("Start");
-						swipeString="";
-						StartedParse=true;
-					}
-					
-				//}).start();
+					String num = parts[0];
+					String[] nambits = parts[1].split("/");
+					String fn = nambits[1];
+					String ln = nambits[0];
+					String Name = fn + " " + ln;
+					String year = parts[2].substring(0, 2);
+					String month = parts[2].substring(2, 4);
+					Platform.runLater(() -> monthfield.setText(month));
+					Platform.runLater(() -> yearfield.setText(year));
+					Platform.runLater(() -> namefield.setText(Name));
+					Platform.runLater(() -> cardnumberfield.setText(num));
+
+					swipeString = "";
+					StartedParse = false;
+					FinishedParse = true;
+				} else
+					swipeString += character;
+				if (swipeString.contentEquals("%B")) {
+					System.out.println("Start");
+					swipeString = "";
+					StartedParse = true;
+				}
+
+				// }).start();
 
 			}
 		};
 		scene.setOnKeyTyped(eventHandler);
-    }
+	}
 
-    @FXML
-    void selectType(ActionEvent event) {
-    	Platform.runLater(() -> cardnumberfield.requestFocus());
+	@FXML
+	void selectType(ActionEvent event) {
+		Platform.runLater(() -> cardnumberfield.requestFocus());
 		Platform.runLater(() -> cardnumberfield.setDisable(false));
 		Platform.runLater(() -> monthfield.setDisable(false));
 		Platform.runLater(() -> yearfield.setDisable(false));
 		Platform.runLater(() -> namefield.setDisable(false));
-		///scene.removeEventHandler(null, eventHandler);;
-    }
+		/// scene.removeEventHandler(null, eventHandler);;
+	}
 
 	@FXML // This method is called by the FXMLLoader when initialization is complete
 	void initialize() {
@@ -366,40 +370,18 @@ public class NewMemberSignup {
 		if (cvcField == null)
 			throw new RuntimeException(
 					"fx:id=\"cvcField\" was not injected: check your FXML file 'NewMemberSignup.fxml'.");
-        assert swipeType != null : "fx:id=\"swipeType\" was not injected: check your FXML file 'NewMemberSignup.fxml'.";
-        assert swipeButton != null : "fx:id=\"swipeButton\" was not injected: check your FXML file 'NewMemberSignup.fxml'.";
-
+		assert swipeType != null : "fx:id=\"swipeType\" was not injected: check your FXML file 'NewMemberSignup.fxml'.";
+		assert swipeButton != null
+				: "fx:id=\"swipeButton\" was not injected: check your FXML file 'NewMemberSignup.fxml'.";
 
 	}
 
 	public void setCardController(CardReaderCommand command, List<Long> availible, Stage primaryStage, Scene scene) {
+		this.availible = availible;
 		this.primaryStage = primaryStage;
 		this.scene = scene;
 		command.setGotCard(newNumber -> {
-			if(updateCardInfoMode) {
-				setKeycardNumber(newNumber, null);
-				return;
-			}
-			for (Long a : availible)
-				if (a == newNumber) {
-					setKeycardNumber(newNumber, null);
-					return;
-				}
-			Platform.runLater(() -> {
-				Alert alert1 = new Alert(AlertType.CONFIRMATION);
-				alert1.setTitle("Card not in Availible List");
-				alert1.setHeaderText("Card unavailable");
-				alert1.setContentText("This card was not in the list of \n" + "availible cards in the Membership sheet"
-						+ "\nUse it anyway?");
-				alert1.showAndWait().ifPresent((btnType1) -> {
-					if (btnType1 == ButtonType.OK) {
-						new Thread(() -> {
-							setKeycardNumber(newNumber, DatabaseSheet.addKeyCard(newNumber));
-						}).start();
-
-					}
-				});
-			});
+			OnNewCardEvent(newNumber);
 		});
 		if (!updateCardInfoMode) {
 			try {
@@ -439,23 +421,55 @@ public class NewMemberSignup {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}else {
+		} else {
 			Platform.runLater(() -> selectApplication.setDisable(true));
-			
+
 		}
 	}
 
+	private void OnNewCardEvent( long newNumber) {
+		if (updateCardInfoMode) {
+			setKeycardNumber(newNumber, null);
+			return;
+		}
+		for (Long a : availible)
+			if (a == newNumber) {
+				setKeycardNumber(newNumber, null);
+				return;
+			}
+		Platform.runLater(() -> {
+			Alert alert1 = new Alert(AlertType.CONFIRMATION);
+			alert1.setTitle("Card not in Availible List");
+			alert1.setHeaderText("Card unavailable");
+			alert1.setContentText("This card was not in the list of \n" + "availible cards in the Membership sheet"
+					+ "\nUse it anyway?");
+			alert1.showAndWait().ifPresent((btnType1) -> {
+				if (btnType1 == ButtonType.OK) {
+					new Thread(() -> {
+						setKeycardNumber(newNumber, DatabaseSheet.addKeyCard(newNumber));
+					}).start();
+
+				}
+			});
+		});
+	}
+
+    @FXML
+    void onCardNum(ActionEvent event) {
+    	long id = Long.parseLong(cardnumberfield.getText());
+    	OnNewCardEvent( id) ;
+    }
+    
 	private void setKeycardNumber(long newNumber, String string) {
 		if (string == null) {
 			this.newNumberID = newNumber;
 			Platform.runLater(() -> cardNumberLabel.setText("card # " + newNumber));
-			if(updateCardInfoMode) {
-				
-				
+			if (updateCardInfoMode) {
+
 				String custID;
 				try {
 					custID = DatabaseSheet.getCustomerStringFromCardID(newNumber);
-					if(custID==null) {
+					if (custID == null) {
 						Platform.runLater(() -> {
 							Alert alert1 = new Alert(AlertType.CONFIRMATION);
 							alert1.setTitle("UNKNOWN member");
@@ -473,10 +487,10 @@ public class NewMemberSignup {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
-			}else
+
+			} else
 				Platform.runLater(() -> step2.setDisable(false));
-			
+
 		} else {
 			Platform.runLater(() -> {
 				Alert alert1 = new Alert(AlertType.CONFIRMATION);
