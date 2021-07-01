@@ -35,7 +35,7 @@ public class Main {
 		URL in = Main.class.getClassLoader().getResource("MainUIWindow.fxml");
 		if(in==null)
 			throw new RuntimeException("No FXML found!");
-		Stripe.apiKey = Keys.Secret;
+		Stripe.apiKey = Keys.getSecret();
 		reader= new BankCardReader();
 		command=new CardReaderCommand();
 		
