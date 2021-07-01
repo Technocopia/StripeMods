@@ -243,6 +243,6 @@ public class MainUIWindow {
 
 			}
 		});
-
+		runUpdateSpreadsheet(null);
 	}
 }

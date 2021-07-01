@@ -33,8 +33,7 @@ public class MembershipLookupTable {
 		MembershipLookupTable.lookup = lookup;
 		try {
 			Map<String, Object> param = new HashMap<>();
-			param.put("limit", 3);
-
+			param.put("active", true);
 			ProductCollection products = Product.list(param);
 			Iterable<Product> productsList = products.autoPagingIterable();
 			for (Product prod : productsList) {

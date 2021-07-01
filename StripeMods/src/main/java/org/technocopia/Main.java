@@ -73,6 +73,7 @@ public class Main {
 		});
 		
 		ui.setCardController(command);	
+		
 	}
 
 

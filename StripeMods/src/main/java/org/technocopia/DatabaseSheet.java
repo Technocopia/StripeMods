@@ -32,8 +32,12 @@ import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Charge;
+import com.stripe.model.ChargeCollection;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
+import com.stripe.model.PaymentIntent;
+import com.stripe.model.PaymentIntentCollection;
 import com.stripe.model.Plan;
 import com.stripe.model.Price;
 import com.stripe.model.Product;
@@ -222,34 +226,86 @@ public class DatabaseSheet {
 			List<List<Object>> inactives = new ArrayList<>();
 			List<List<Object>> communityMembers = new ArrayList<>();
 			List<List<Object>> nosubhascard = new ArrayList<>();
+			List<List<Object>> familyMembers = new ArrayList<>();
+			List<List<Object>> fulldayMembers = new ArrayList<>();
+			List<List<Object>> nightsMembers = new ArrayList<>();
+			HashMap<String,List<Object>> thisYearsFinances=new HashMap<>();
+			Calendar cal = Calendar.getInstance();
+			int year = cal.get(Calendar.YEAR);
+			String sheetNameForFinances = "" + year;
+
 			for (Customer customer : customers.autoPagingIterable()) {
 				ArrayList<Object> line = new ArrayList<>();
-				while(line.size()<8)
+				while (line.size() < 8)
 					line.add("");
 				if (!customer.getDelinquent()) {
-					line.set(0,"      Paid");
+					line.set(0, "      Paid");
 				} else {
-					line.set(0,"DELINQUENT this month");
+					line.set(0, "DELINQUENT this month");
 				}
 
 				String custID = customer.getId();
-				line.set(1,custID);
+				line.set(1, custID);
 				String email = customer.getEmail();
-				line.set(2,email);
+				line.set(2, email);
+				if(thisYearsFinances.get(custID)==null) {
+					ArrayList<Object> finances = new ArrayList<>();
+					finances.add(custID);
+					finances.add(email);
+					for (int i = 0; i < 12*2; i++) {
+						finances.add("=0");
+					}
+					thisYearsFinances.put(custID, finances);
+				}
+
+			
+				Map<String, Object> paramspaymentintents = new HashMap<>();
+				paramspaymentintents.put("customer", custID);
+				paramspaymentintents.put("limit", 24*3);
+				Iterable<PaymentIntent> paymentIntents = PaymentIntent.list(paramspaymentintents).autoPagingIterable();
+				boolean hasPaymentsThisyear=false;
+				for (PaymentIntent payment : paymentIntents) {
+					Iterable<Charge> chargeList = payment.getCharges().autoPagingIterable();
+					for (Charge singleCharge : chargeList) {
+						if (singleCharge.getPaid()&& !singleCharge.getRefunded()) {
+							long timestampOfPayment = singleCharge.getCreated();
+							double amount = ((double) singleCharge.getAmount()) / 100.0;
+							Calendar calOfCharge = Calendar.getInstance();
+							calOfCharge.setTimeInMillis(timestampOfPayment * 1000);
+							int yearOfCharge = calOfCharge.get(Calendar.YEAR);
+							int monthOfCharge = calOfCharge.get(Calendar.MONTH);
+							if (yearOfCharge == year ) {
+								int index = (monthOfCharge) + 2;
+								//System.out.println(singleCharge);
+								//System.out.println(payment);
+								if (yearOfCharge == year) {
+									hasPaymentsThisyear=true;
+									String string = thisYearsFinances.get(custID).get(index).toString();
+									if(string.contentEquals("=0")) {
+										string="=";
+									}else {
+										string=string+ "+";
+									}
+									thisYearsFinances.get(custID).set(index, string+ amount);
+								} 
+								System.out.println( email+" charged "+amount+" on "+(monthOfCharge+1)+"/"+yearOfCharge);
+							}
+						}
+					}
+				}
 
 				for (List<Object> rows : sourceData) {
 					try {
 						String emailToTest = rows.get(1).toString();
 						if (emailToTest.toLowerCase().contains(email.toLowerCase())) {
-							line.set(3,rows.get(0).toString());
-							line.set(4,rows.get(4).toString());
+							line.set(3, rows.get(0).toString());
+							line.set(4, rows.get(4).toString());
 							break;
 						}
 					} catch (Exception ex) {
 						// ex.printStackTrace();
 					}
 				}
-
 
 				Map<String, Object> params1 = new HashMap<>();
 				params1.put("customer", custID);
@@ -269,9 +325,8 @@ public class DatabaseSheet {
 //							Product p =Product.;
 //							String id2 = p.getName();
 							String id2 = MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
-							String id = id2.toLowerCase();
-							if (id.contains("day") || id.contains("24") || id.contains("week")
-									|| id.contains("nights")||id.contains("community")||id.contains("member")) {
+							//String id = id2.toLowerCase();
+							if (isMembership(id2)) {
 								membershipType = id2;
 							} else {
 								if (space.length() > 0)
@@ -282,51 +337,107 @@ public class DatabaseSheet {
 						}
 
 					}
-					line.set(5,membershipType);
-					line.set(6,space);
-					if(membershipType.contains("Community"))
+					line.set(5, membershipType);
+					line.set(6, space);
+					if (membershipType.contains("Community"))
 						communityMembers.add(line);
+					else if (membershipType.contains("Family"))
+						familyMembers.add(line);
+					else if (membershipType.contains("24"))
+						fulldayMembers.add(line);
+					else if (membershipType.contains("Nights"))
+						nightsMembers.add(line);
 					else
 						values.add(0, line);
 					Platform.runLater(() -> a.setContentText("Updating " + email));
-				} else {
 					
-					line.set(7,"No Subscriptions");
+				} else {
+
+					line.set(7, "No Subscriptions");
 					line.set(0, "");
-					if(line.get(4).toString().length()>1) {
+					if (line.get(4).toString().length() > 1) {
 						nosubhascard.add(line);
-					}else
+					} else
 						inactives.add(line);
 				}
+				System.out.println("Updateing sheets for "+ email);
+				if(!hasPaymentsThisyear) {
+					thisYearsFinances.remove(custID);
+				}
 			}
+			for (List<Object> rows : nightsMembers)
+				values.add(rows);
+			for (List<Object> rows : fulldayMembers)
+				values.add(rows);
+			for (List<Object> rows : familyMembers)
+				values.add(rows);
 			for (List<Object> rows : communityMembers)
 				values.add(rows);
 			for (List<Object> rows : nosubhascard)
 				values.add(rows);
 			for (List<Object> rows : inactives)
 				values.add(rows);
-			clearAutogen();
+			clearAutogen("AUTOGEN");
+			clearAutogen(sheetNameForFinances);
+			writeDataToAutogen(values, HTTP_TRANSPORT);
+			
+			
+			List<List<Object>> thisYearsFinancesList = new ArrayList<>();
+			for(List<Object> row:thisYearsFinances.values()) {
+				for(int i=0;i<row.size();i++) {
+					if(row.get(i).toString().contentEquals("=0")) {
+						row.set(i, "");
+					}
+				}
+				thisYearsFinancesList.add(row);
+			}
 
-			List<ValueRange> data = new ArrayList<>();
+			writeDataToFInances(thisYearsFinancesList, HTTP_TRANSPORT, sheetNameForFinances);
 
-			data.add(new ValueRange().setRange("AUTOGEN!A2:H").setValues(values));
-			// Additional ranges to update ...
-			Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-					.setApplicationName(APPLICATION_NAME).build();
-			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
-					.setData(data);
-			serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body)
-					.execute();
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
 	}
+	
+	private static boolean isMembership(String subscriptionName) {
+		subscriptionName=subscriptionName.toLowerCase();
+		return (subscriptionName.contains("day") || subscriptionName.contains("24") || subscriptionName.contains("week") || subscriptionName.contains("nights")
+				|| subscriptionName.contains("community") || subscriptionName.contains("member"));
+	}
 
-	private static void clearAutogen() throws GeneralSecurityException, IOException, URISyntaxException {
+	private static void writeDataToFInances(List<List<Object>> values, final NetHttpTransport HTTP_TRANSPORT,
+			String page) throws IOException, URISyntaxException {
+		List<ValueRange> data = new ArrayList<>();
+
+		data.add(new ValueRange().setRange(page + "!A3:Z").setValues(values));
+		// Additional ranges to update ...
+		Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+				.setApplicationName(APPLICATION_NAME).build();
+		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
+				.setData(data);
+		serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body)
+				.execute();
+	}
+
+	private static void writeDataToAutogen(List<List<Object>> values, final NetHttpTransport HTTP_TRANSPORT)
+			throws IOException, URISyntaxException {
+		List<ValueRange> data = new ArrayList<>();
+
+		data.add(new ValueRange().setRange("AUTOGEN!A3:H").setValues(values));
+		// Additional ranges to update ...
+		Sheets serviceWrite = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+				.setApplicationName(APPLICATION_NAME).build();
+		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest().setValueInputOption("USER_ENTERED")
+				.setData(data);
+		serviceWrite.spreadsheets().values().batchUpdate("1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U", body)
+				.execute();
+	}
+
+	private static void clearAutogen(String sheet) throws GeneralSecurityException, IOException, URISyntaxException {
 		// TODO Auto-generated method stub
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 		final String spreadsheetId = "1j4QNlpi6piCcE8o0M7nwvmxUH1FtRjEW3OwE1rVob4U";
-		String range2 = "AUTOGEN!A2:H";
+		String range2 = sheet+"!A3:Z";
 		String range = range2;
 		Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
