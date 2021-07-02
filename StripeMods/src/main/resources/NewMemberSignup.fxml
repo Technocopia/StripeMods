@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
@@ -101,12 +102,17 @@
                         <TextField fx:id="cvcField" prefHeight="26.0" prefWidth="178.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                         <Label text="CVC" GridPane.rowIndex="4" />
                         <Button fx:id="confirmbutton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#confirmCardInfo" prefHeight="54.0" prefWidth="156.0" text="Confirm Signup" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                        <RadioButton fx:id="typeButton" mnemonicParsing="false" onAction="#selectType" text="Type " GridPane.columnIndex="1">
+                        <RadioButton fx:id="swipeButton" mnemonicParsing="false" onAction="#selectSwipe" selected="true" text="Swipe">
                            <toggleGroup>
                               <ToggleGroup fx:id="swipeType" />
                            </toggleGroup>
                         </RadioButton>
-                        <RadioButton fx:id="swipeButton" mnemonicParsing="false" onAction="#selectSwipe" selected="true" text="Swipe" toggleGroup="$swipeType" />
+                        <HBox prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="1">
+                           <children>
+                              <RadioButton fx:id="typeButton" mnemonicParsing="false" onAction="#selectType" text="Type " toggleGroup="$swipeType" />
+                              <RadioButton fx:id="selectCash" mnemonicParsing="false" onAction="#selectCashAction" text="Cash" toggleGroup="$swipeType" />
+                           </children>
+                        </HBox>
                      </children>
                      <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />

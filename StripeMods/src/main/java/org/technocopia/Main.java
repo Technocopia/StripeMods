@@ -90,7 +90,7 @@ public class Main {
 				String id2= MembershipLookupTable.toHumanReadableString(product.getPrice().getId());
 				String id = id2.toLowerCase();
 				if (id.contains("day") || id.contains("24") || id.contains("week")
-						|| id.contains("nights")) {
+						|| id.contains("nights")||id.contains("community")) {
 					subs.cancel();
 				} 
 			}

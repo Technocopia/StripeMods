@@ -35,6 +35,8 @@ public class MailManager {
 	private static final String APPLICATION_NAME = "TechnocopiaKeiosk";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String TOKENS_DIRECTORY_PATH = "tokenmail";
+	
+	static boolean testmode=true;
 
 	/**
 	 * Global instance of the scopes required by this quickstart. If modifying these
@@ -124,7 +126,13 @@ public class MailManager {
 	 * @throws GeneralSecurityException
 	 */
 	public static void sendEmail(String to,String cc, String subject, String bodyText) {
-
+		if(testmode) {
+			to="mad.hephaestus@gmail.com";
+			cc=to;
+		}
+			
+		String threadTo=to;
+		String threadCC=cc;
 		new Thread(() -> {
 			try {
 				final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -132,7 +140,7 @@ public class MailManager {
 						.setApplicationName(APPLICATION_NAME).build();
 				Profile p = service.users().getProfile("me").execute();
 				String email = p.getEmailAddress();
-				MimeMessage emailContent = createEmail(to,cc, email, subject, bodyText);
+				MimeMessage emailContent = createEmail(threadTo,threadCC, email, subject, bodyText);
 				Message message = createMessageWithEmail(emailContent);
 				message = service.users().messages().send(email, message).execute();
 

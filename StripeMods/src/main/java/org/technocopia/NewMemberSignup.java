@@ -34,6 +34,9 @@ import javafx.scene.input.KeyEvent;
 public class NewMemberSignup {
 
 	@FXML
+	private RadioButton selectCash;
+
+	@FXML
 	private TextField fieldOfCardNum;
 
 	private String phonenumber;
@@ -108,6 +111,8 @@ public class NewMemberSignup {
 
 	private List<Long> availible;
 
+	private boolean cashMode = false;
+
 	@FXML
 	void confirmCardInfo(ActionEvent event) throws StripeException {
 		Platform.runLater(() -> step3.setDisable(true));
@@ -130,47 +135,59 @@ public class NewMemberSignup {
 			String email = emailLabel.getText();
 			String name = nameLabel.getText();
 			String membership = membershipTypeLabel.getText();
-			String cardnumber = cardnumberfield.getText();
-			int month = Integer.parseInt(monthfield.getText());
-			int year = Integer.parseInt("20" + yearfield.getText());
-			String cvc = cvcField.getText();
-
 			Customer customer;
 			HashMap<String, Object> params2 = new HashMap<String, Object>();
 			params2.put("email", email);
 			Platform.runLater(() -> a.setContentText("Read current customers"));
 			Iterable<Customer> customers = Customer.list(params2).autoPagingIterable();
 			long size = StreamSupport.stream(customers.spliterator(), false).count();
-			String paymentMethod = "";
 			PaymentMethod paymentMethodObject = null;
-			if (size == 0 || updateCardInfoMode) {
-				Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
-				paymentMethodObject = makePaymentMethod(cardnumber, month, year, cvc);
-				paymentMethod = paymentMethodObject.getId();
-			}
+			String paymentMethod = "";
+			if (!cashMode) {
+				String cardnumber = cardnumberfield.getText();
+				int month = Integer.parseInt(monthfield.getText());
+				int year = Integer.parseInt("20" + yearfield.getText());
+				String cvc = cvcField.getText();
 
+				
+				
+				if (size == 0 || updateCardInfoMode) {
+					Platform.runLater(() -> a.setContentText("Make new Customer/Bank card"));
+					paymentMethodObject = makePaymentMethod(cardnumber, month, year, cvc);
+					paymentMethod = paymentMethodObject.getId();
+				}
+			}
 			if (size != 0) {
 				customer = StreamSupport.stream(customers.spliterator(), false).findFirst().get();
 				if (updateCardInfoMode) {
 					Map<String, Object> params = new HashMap<>();
 					params.put("customer", customer.getId());
-					paymentMethodObject = paymentMethodObject.attach(params);
+					if (!cashMode) 
+						paymentMethodObject = paymentMethodObject.attach(params);
 
 					Map<String, Object> params1 = new HashMap<>();
 					Map<String, Object> invoicesettings = new HashMap<>();
-					invoicesettings.put("default_payment_method", paymentMethod);
+					if (!cashMode) 
+						invoicesettings.put("default_payment_method", paymentMethod);
 					params1.put("invoice_settings", invoicesettings);
 					customer = customer.update(params1);
 
 				}
 			} else {
-
-				CustomerCreateParams params = CustomerCreateParams.builder().setEmail(email)
+				CustomerCreateParams params=null;
+				if (!cashMode) {
+					params = CustomerCreateParams.builder().setEmail(email)
 						.setPaymentMethod(paymentMethod).setName(name)
 						.setInvoiceSettings(CustomerCreateParams.InvoiceSettings.builder()
 								.setDefaultPaymentMethod(paymentMethod).build())
 						.build();
-
+				}else {
+					params = CustomerCreateParams.builder().setEmail(email)
+							.setName(name)
+							.setInvoiceSettings(CustomerCreateParams.InvoiceSettings.builder()
+									.build())
+							.build();
+				}
 				customer = Customer.create(params);
 			}
 			if (!updateCardInfoMode) {
@@ -193,6 +210,9 @@ public class NewMemberSignup {
 						price = "price_0J4o1BH0T8nvPnROFyLG5l1m";
 					else
 						price = "price_0J4zTMH0T8nvPnROxqHnL22E";
+				}
+				if (membership.toLowerCase().contains("comunity")) {
+					price = "price_0IF5K1H0T8nvPnROZnJi7JmB";
 				}
 				Platform.runLater(() -> a.setContentText("Set up subscription"));
 
@@ -263,11 +283,24 @@ public class NewMemberSignup {
 	}
 
 	@FXML
-	void selectSwipe(ActionEvent event) {
+	void selectCashAction(ActionEvent event) {
 		Platform.runLater(() -> cardnumberfield.setDisable(true));
 		Platform.runLater(() -> monthfield.setDisable(true));
 		Platform.runLater(() -> yearfield.setDisable(true));
 		Platform.runLater(() -> namefield.setDisable(true));
+		Platform.runLater(() -> cvcField.setDisable(true));
+		cashMode = true;
+	}
+
+	@FXML
+	void selectSwipe(ActionEvent event) {
+		cashMode = false;
+		Platform.runLater(() -> cardnumberfield.setDisable(true));
+		Platform.runLater(() -> monthfield.setDisable(true));
+		Platform.runLater(() -> yearfield.setDisable(true));
+		Platform.runLater(() -> namefield.setDisable(true));
+		Platform.runLater(() -> cvcField.setDisable(false));
+
 		Platform.runLater(() -> swipeButton.requestFocus());
 		swipeString = "";
 		StartedParse = false;
@@ -322,11 +355,14 @@ public class NewMemberSignup {
 
 	@FXML
 	void selectType(ActionEvent event) {
+		cashMode = false;
 		Platform.runLater(() -> cardnumberfield.requestFocus());
 		Platform.runLater(() -> cardnumberfield.setDisable(false));
 		Platform.runLater(() -> monthfield.setDisable(false));
 		Platform.runLater(() -> yearfield.setDisable(false));
 		Platform.runLater(() -> namefield.setDisable(false));
+		Platform.runLater(() -> cvcField.setDisable(false));
+
 		/// scene.removeEventHandler(null, eventHandler);;
 	}
 
@@ -427,7 +463,7 @@ public class NewMemberSignup {
 		}
 	}
 
-	private void OnNewCardEvent( long newNumber) {
+	private void OnNewCardEvent(long newNumber) {
 		if (updateCardInfoMode) {
 			setKeycardNumber(newNumber, null);
 			return;
@@ -454,12 +490,12 @@ public class NewMemberSignup {
 		});
 	}
 
-    @FXML
-    void onCardNum(ActionEvent event) {
-    	long id = Long.parseLong(cardnumberfield.getText());
-    	OnNewCardEvent( id) ;
-    }
-    
+	@FXML
+	void onCardNum(ActionEvent event) {
+		long id = Long.parseLong(fieldOfCardNum.getText());
+		OnNewCardEvent(id);
+	}
+
 	private void setKeycardNumber(long newNumber, String string) {
 		if (string == null) {
 			this.newNumberID = newNumber;
