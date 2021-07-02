@@ -73,7 +73,7 @@ public class Main {
 		});
 		
 		ui.setCardController(command);	
-		DatabaseSheet.checkAdministrator(7142231);
+		//DatabaseSheet.checkAdministrator(7142231);
 	}
 
 

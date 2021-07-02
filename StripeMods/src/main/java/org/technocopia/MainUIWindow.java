@@ -243,7 +243,7 @@ public class MainUIWindow {
 
 			}
 		});
-		Platform.runLater(() -> controlpanel.setDisable(false));
+		//Platform.runLater(() -> controlpanel.setDisable(false));
 		//runUpdateSpreadsheet(null);
 	}
 }

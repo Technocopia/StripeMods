@@ -36,7 +36,7 @@ public class MailManager {
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String TOKENS_DIRECTORY_PATH = "tokenmail";
 	
-	static boolean testmode=true;
+	static boolean testmode=false;
 
 	/**
 	 * Global instance of the scopes required by this quickstart. If modifying these

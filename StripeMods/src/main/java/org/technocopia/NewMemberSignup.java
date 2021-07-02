@@ -211,7 +211,7 @@ public class NewMemberSignup {
 					else
 						price = "price_0J4zTMH0T8nvPnROxqHnL22E";
 				}
-				if (membership.toLowerCase().contains("comunity")) {
+				if (membership.toLowerCase().contains("community")) {
 					price = "price_0IF5K1H0T8nvPnROZnJi7JmB";
 				}
 				Platform.runLater(() -> a.setContentText("Set up subscription"));
